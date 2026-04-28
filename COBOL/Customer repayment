@@ -1,0 +1,537 @@
+      * PROGRAM-ID : CUSTCASH                                          *
+      * DESCRIPTION: CUSTOMER REPAYMENT VIA BANK FILE TRANSFER.
+      *              DEBITS CUSTOMER BANK ACCOUNT AND CREDITS          *
+      *              MASTER ACCOUNT 'MASTER0001' IN BANKFL.            *
+      * MAP/MAPSET : CURETRY / PLCTCSH                                 *
+      * FILES USED : PLLOANFL  - LOAN MASTER FILE                      *
+      *              PLCUSTDT  - CUSTOMER DETAILS FILE                  *
+      *              BANKFL    - BANK ACCOUNT FILE                      *
+      *              PLTXNFL   - TRANSACTION FILE                       *
+      *              PLLDGR    - LEDGER FILE                            *
+      *              PLTXNCNT  - TRANSACTION COUNTER FILE               *
+      * KEYS       : ENTER  - FETCH ACCOUNT DETAILS                    *
+      *              PF3    - RETURN TO MENU (I001)                     *
+      *              PF5    - SUBMIT BANK REPAYMENT                     *
+      *================================================================*
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. CUSTCASH.
+      *
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       COPY DFHAID.
+       COPY PLCTCSH.
+      *
+       01  WS-RESP           PIC S9(8) COMP.
+       01  WS-RESP2          PIC S9(8) COMP.
+       01  WS-ACCNO          PIC X(6).
+       01  WS-DATE           PIC X(10).
+       01  WS-ABSTIME        PIC X(10).
+       01  WS-AMOUNT         PIC 9(6).
+       01  NEW-OUTSTDG       PIC 9(6).
+       01  WS-TXN-KEY        PIC 9(6) VALUE 000000.
+       01  WS-OUTSTDG-D      PIC Z(6).
+       01  WS-PENALTY-D      PIC Z(6).
+       01  NEW-AMT-PAID      PIC 9(6).
+      *
+      *----------------------------------------------------------------*
+      * MASTER ACCOUNT KEY FOR BANKFL CREDIT                           *
+      *----------------------------------------------------------------*
+       01  WS-MASTER-KEY     PIC X(10) VALUE 'MASTER0001'.
+      *
+      *----------------------------------------------------------------*
+      * BANK FILE RECORD LAYOUT                                         *
+      *   BACCTNO  X(10)                                               *
+      *   BANKNAME X(10)                                               *
+      *   PHONE    X(10)                                               *
+      *   ADDRESS  X(12)                                               *
+      *   BALANCE  9(9)                                                *
+      *----------------------------------------------------------------*
+       01  WS-BANK-RECORD.
+           05 WS-BACCTNO         PIC X(10).
+           05 WS-BANKNAME        PIC X(10).
+           05 WS-PHONE           PIC X(10).
+           05 WS-ADDRESS         PIC X(12).
+           05 WS-BALANCE         PIC 9(9).
+           05 WS-EXTRASPACE      PIC X(29).
+      *
+       01  WS-MASTER-RECORD.
+           05 WS-MSTR-ACCTNO     PIC X(10).
+           05 WS-MSTR-BANKNAME   PIC X(10).
+           05 WS-MSTR-PHONE      PIC X(10).
+           05 WS-MSTR-ADDRESS    PIC X(12).
+           05 WS-MSTR-BALANCE    PIC 9(9).
+           05 WS-EXTRASPACE-MS   PIC X(29).
+      *
+       01  WS-LOAN-RECORD.
+           05 WS-LOAN-ACT-NO     PIC X(6).
+           05 WS-CUST-ID         PIC X(6).
+           05 WS-SCHEME          PIC X(1).
+           05 WS-LOAN-AMT        PIC 9(6).
+           05 WS-TENURE          PIC 9(3).
+           05 WS-INTEREST        PIC 9(2).
+           05 WS-BANK-ACCT       PIC X(10).
+           05 WS-INCOME          PIC 9(6).
+           05 WS-SURETY-ASSET    PIC X(10).
+           05 WS-SURETY-VAL      PIC 9(6).
+           05 WS-SURETY-ACCT     PIC X(6).
+           05 WS-OUTSTDG         PIC 9(6).
+           05 WS-PAID-TO-DATE    PIC X(8).
+           05 WS-NEXT-DUE-DT     PIC X(8).
+           05 WS-DAYS-OVERD      PIC 9(3).
+           05 WS-PENALTY         PIC 9(6).
+           05 WS-STATUS          PIC X(1).
+           05 WS-OPEN-DATE       PIC X(8).
+           05 WS-CLOSE-DATE      PIC X(8).
+           05 WS-NXT-INSTALLMNT     PIC 9(6).
+           05 WS-FIRST-INSTALLMNT   PIC 9(6).
+           05 WS-INSTALLEMENT-AMT   PIC 9(6).
+           05 L-STLMNT-STS         PIC  X.
+           05 L-GRACE-PERIOD       PIC  9.
+           05 L-PAID-AMT           PIC  9(6).
+           05 EXTRA-SPACE          PIC  X(14).
+      *
+       01  WS-CUSTOMER-RECORD.
+           05 WS-CUST-ID-REC     PIC X(6).
+           05 WS-CUST-NAME       PIC X(20).
+           05 WS-AADHAR          PIC X(12).
+           05 WS-CUST-PHONE      PIC X(10).
+           05 WS-CUST-ADDRESS    PIC X(12).
+           05 WS-IS-LOCAL        PIC X(1).
+           05 WS-AGE             PIC 9(2).
+           05 WS-LOANS           PIC 9(2).
+           05 WS-RATING          PIC X(1).
+           05 FILLER-EXTRA       PIC X(14).
+      *
+       01  WS-TXN-RECORD.
+           05 WS-TXNID           PIC 9(6).
+           05 WS-LACCTNO         PIC X(6).
+           05 WS-TXNDATE         PIC X(10).
+           05 WS-TXNMODE         PIC X(7).
+           05 WS-TXNTYPE         PIC X(9).
+           05 WS-TXNAMT          PIC 9(6).
+           05 WS-TXNOUTSTD       PIC 9(6).
+           05 WS-ENTRYBY         PIC X(8).
+           05 TXN-EXTRA          PIC X(22).
+      *
+       01  WS-COUNT-REC.
+           05 WS-KEY             PIC 9(6).
+           05 LAST-TXNID         PIC 9(6).
+       01  WS-COMMAREA.
+           05 WS-USER-ID           PIC X(6).
+           05 WS-SCREEN-CODE       PIC X(1).
+      *
+       LINKAGE SECTION.
+       01  DFHCOMMAREA.
+           05 USER-ID           PIC X(6).
+           05 USER-TYPE         PIC X(1).
+      *
+      *================================================================*
+       PROCEDURE DIVISION.
+      *================================================================*
+       000-MAIN-PARA.
+           IF EIBCALEN = 0
+              MOVE LOW-VALUES TO CURETRYO
+              PERFORM 100-SEND-SCREEN
+              PERFORM 900-RETURN-CICS
+           END-IF
+           MOVE DFHCOMMAREA TO WS-COMMAREA
+           IF WS-SCREEN-CODE = 'R'
+              MOVE LOW-VALUES TO CURETRYO
+              PERFORM 100-SEND-SCREEN
+              PERFORM 900-RETURN-CICS
+           END-IF
+              MOVE SPACES TO WS-LOAN-RECORD
+              MOVE SPACES TO WS-CUSTOMER-RECORD
+              MOVE SPACES TO WS-TXN-RECORD
+              MOVE SPACES TO WS-BANK-RECORD
+              MOVE SPACES TO WS-MASTER-RECORD
+              PERFORM 200-FETCH-ACCOUNT
+              PERFORM 900-RETURN-CICS.
+      *
+      *----------------------------------------------------------------*
+      * 100-SEND-SCREEN                                                 *
+      *   Display blank map with current date                           *
+      *----------------------------------------------------------------*
+       100-SEND-SCREEN.
+           EXEC CICS ASKTIME
+                ABSTIME(WS-ABSTIME)
+           END-EXEC
+           EXEC CICS FORMATTIME
+                ABSTIME(WS-ABSTIME)
+                DDMMYYYY(WS-DATE)
+                DATESEP('/')
+           END-EXEC
+           MOVE WS-DATE TO DBDATEO
+           MOVE LOW-VALUES TO WS-SCREEN-CODE
+           EXEC CICS SEND MAP('CURETRY')
+                MAPSET('PLCTCSH')
+                ERASE
+                FREEKB
+           END-EXEC.
+      *
+      *----------------------------------------------------------------*
+      * 200-FETCH-ACCOUNT                                               *
+      *   Evaluate AID key and branch accordingly                       *
+      *----------------------------------------------------------------*
+       200-FETCH-ACCOUNT.
+           EVALUATE EIBAID
+      *
+      *         ENTER - Read account number and display loan details
+           WHEN DFHENTER
+                PERFORM 300-RECEIVE-SCREEN
+                PERFORM 400-READLOANFILE
+                IF WS-RESP = DFHRESP(NORMAL)
+                   PERFORM 500-FETCH-CUSTDETAILS
+                   PERFORM 600-SENDDATA
+                   MOVE 'ACCOUNT FOUND. ENTER AMOUNT AND PRESS F5.'
+                                                     TO CRMSGO
+                   EXEC CICS SEND MAP('CURETRY')
+                        MAPSET('PLCTCSH')
+                        ERASE
+                        FREEKB
+                   END-EXEC
+                ELSE
+                   MOVE 'ACCOUNT DOES NOT EXIST'     TO CRMSGO
+                   PERFORM 100-SEND-SCREEN
+                END-IF
+      *
+      *         PF3 - Return to main menu
+           WHEN DFHPF3
+                 MOVE 'C' TO WS-SCREEN-CODE
+                 EXEC CICS XCTL PROGRAM('PCUST1')
+                      COMMAREA(WS-COMMAREA)
+                      LENGTH(7)
+                 END-EXEC
+      *
+      *         PF5 - Submit bank repayment
+           WHEN DFHPF5
+                EXEC CICS RECEIVE MAP('CURETRY')
+                     MAPSET('PLCTCSH')
+                END-EXEC
+                MOVE CRACNOI(1:6) TO WS-ACCNO
+                MOVE CRAMTI       TO WS-AMOUNT
+                PERFORM 700-VALIDATE-INPUT
+                IF WS-RESP = DFHRESP(NORMAL)
+                   PERFORM 800-BANK-REPAYMENT-PARA
+                END-IF
+      *
+      *         Any other key - redisplay screen
+           WHEN OTHER
+                PERFORM 100-SEND-SCREEN
+           END-EVALUATE.
+      *
+      *----------------------------------------------------------------*
+      * 300-RECEIVE-SCREEN                                              *
+      *   Receive map input and extract account number                  *
+      *----------------------------------------------------------------*
+       300-RECEIVE-SCREEN.
+           EXEC CICS RECEIVE MAP('CURETRY')
+                MAPSET('PLCTCSH')
+           END-EXEC
+           MOVE CRACNOI(1:6) TO WS-ACCNO.
+      *
+      *----------------------------------------------------------------*
+      * 400-READLOANFILE                                                *
+      *   Read loan record for the entered account number               *
+      *----------------------------------------------------------------*
+       400-READLOANFILE.
+           EXEC CICS READ
+                FILE('PLLOANFL')
+                INTO(WS-LOAN-RECORD)
+                RIDFLD(WS-ACCNO)
+                RESP(WS-RESP)
+           END-EXEC.
+      *
+      *----------------------------------------------------------------*
+      * 500-FETCH-CUSTDETAILS                                           *
+      *   Read customer details using customer ID from loan record      *
+      *----------------------------------------------------------------*
+       500-FETCH-CUSTDETAILS.
+           EXEC CICS READ
+                FILE('PLCUSTDT')
+                INTO(WS-CUSTOMER-RECORD)
+                RIDFLD(WS-CUST-ID)
+                RESP(WS-RESP)
+           END-EXEC.
+      *
+      *----------------------------------------------------------------*
+      * 600-SENDDATA                                                    *
+      *   Populate and send map with loan and customer details          *
+      *----------------------------------------------------------------*
+       600-SENDDATA.
+           EXEC CICS ASKTIME
+                ABSTIME(WS-ABSTIME)
+           END-EXEC
+           EXEC CICS FORMATTIME
+                ABSTIME(WS-ABSTIME)
+                DDMMYYYY(WS-DATE)
+                DATESEP('/')
+           END-EXEC
+           MOVE WS-DATE           TO DBDATEO
+           MOVE WS-CUST-NAME      TO CRNAMEO
+           MOVE WS-DAYS-OVERD     TO CRDOVDO
+           MOVE WS-OUTSTDG        TO WS-OUTSTDG-D
+           MOVE WS-PENALTY        TO WS-PENALTY-D
+           MOVE WS-OUTSTDG-D      TO CROUTSO
+           MOVE WS-PENALTY-D      TO CRPENAO
+           INSPECT WS-NEXT-DUE-DT REPLACING ALL LOW-VALUES BY SPACES
+           MOVE WS-NEXT-DUE-DT    TO CRDUEDO
+           MOVE WS-NXT-INSTALLMNT TO CRINSDO
+           MOVE SPACES            TO CRBNKAO
+           MOVE WS-BANK-ACCT      TO CRBNKAO.
+      *
+      *----------------------------------------------------------------*
+      * 700-VALIDATE-INPUT                                              *
+      *   Validate amount > 0 and account number not blank              *
+      *   Also verify customer bank account exists in BANKFL            *
+      *   Sets WS-RESP to DFHRESP(NORMAL) if all checks pass           *
+      *----------------------------------------------------------------*
+       700-VALIDATE-INPUT.
+      *    Check account number supplied
+           IF WS-ACCNO = SPACES OR WS-ACCNO = LOW-VALUES
+              MOVE 'INVALID ACCOUNT NUMBER ENTERED'   TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              MOVE DFHRESP(ERROR) TO WS-RESP
+              PERFORM 900-RETURN-CICS
+           END-IF
+      *    Re-read loan to get bank account linked
+           PERFORM 400-READLOANFILE
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'LOAN ACCOUNT NOT FOUND'           TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              PERFORM 900-RETURN-CICS
+           END-IF
+      *    Check amount is non-zero
+           IF WS-AMOUNT = 0
+              MOVE 'AMOUNT CANNOT BE ZERO'            TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              MOVE DFHRESP(ERROR) TO WS-RESP
+              PERFORM 900-RETURN-CICS
+           END-IF
+      *    Check amount does not exceed outstanding balance
+           IF WS-AMOUNT > WS-OUTSTDG
+              MOVE 'AMOUNT EXCEEDS OUTSTANDING BALANCE' TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              MOVE DFHRESP(ERROR) TO WS-RESP
+              PERFORM 900-RETURN-CICS
+           END-IF
+      *    Check customer bank account exists in BANKFL
+           EXEC CICS READ
+                FILE('PLBANKFL')
+                INTO(WS-BANK-RECORD)
+                RIDFLD(WS-BANK-ACCT)
+                RESP(WS-RESP)
+           END-EXEC
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'CUSTOMER BANK ACCOUNT NOT FOUND'  TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              PERFORM 900-RETURN-CICS
+           END-IF
+      *    Check customer bank balance is sufficient
+           IF WS-AMOUNT > WS-BALANCE
+              MOVE 'INSUFFICIENT FUNDS IN BANK ACCOUNT' TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              MOVE DFHRESP(ERROR) TO WS-RESP
+              PERFORM 900-RETURN-CICS
+           END-IF
+      *    All validations passed
+           MOVE DFHRESP(NORMAL) TO WS-RESP.
+      *
+      *----------------------------------------------------------------*
+      * 800-BANK-REPAYMENT-PARA                                        *
+      *   Core repayment logic:                                         *
+      *   1. Lock and debit customer BANKFL record                      *
+      *   2. Lock and credit MASTER0001 BANKFL record                   *
+      *   3. Obtain next transaction ID from counter file               *
+      *   4. Update loan outstanding in PLLOANFL                        *
+      *   5. Write transaction record to PLTXNFL and PLLDGR             *
+      *----------------------------------------------------------------*
+       800-BANK-REPAYMENT-PARA.
+           EXEC CICS ASKTIME
+                ABSTIME(WS-ABSTIME)
+           END-EXEC
+           EXEC CICS FORMATTIME
+                ABSTIME(WS-ABSTIME)
+                DDMMYYYY(WS-DATE)
+                DATESEP('/')
+           END-EXEC
+      *
+      *    --- STEP 1: DEBIT CUSTOMER BANK ACCOUNT ---
+           EXEC CICS READ
+                FILE('PLBANKFL')
+                INTO(WS-BANK-RECORD)
+                UPDATE
+                RIDFLD(WS-BANK-ACCT)
+                RESP(WS-RESP)
+           END-EXEC
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'ERROR LOCKING CUSTOMER BANK ACCOUNT' TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              PERFORM 900-RETURN-CICS
+           END-IF
+           MOVE WS-DATE(1:2) TO WS-PAID-TO-DATE(1:2)
+           MOVE WS-DATE(4:2) TO WS-PAID-TO-DATE(3:2)
+           MOVE WS-DATE(7:4) TO WS-PAID-TO-DATE(5:4)
+           ADD WS-AMOUNT TO L-PAID-AMT GIVING NEW-AMT-PAID
+           MOVE NEW-AMT-PAID TO L-PAID-AMT
+           SUBTRACT WS-AMOUNT FROM WS-BALANCE
+           EXEC CICS REWRITE
+                FILE('PLBANKFL')
+                FROM(WS-BANK-RECORD)
+                RESP(WS-RESP)
+           END-EXEC
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'ERROR DEBITING CUSTOMER BANK ACCOUNT' TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              PERFORM 900-RETURN-CICS
+           END-IF
+      *
+      *    --- STEP 2: CREDIT MASTER ACCOUNT (MASTER0001) ---
+           EXEC CICS READ
+                FILE('PLBANKFL')
+                INTO(WS-MASTER-RECORD)
+                UPDATE
+                RIDFLD(WS-MASTER-KEY)
+                RESP(WS-RESP)
+           END-EXEC
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'ERROR LOCKING MASTER BANK ACCOUNT'   TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              PERFORM 900-RETURN-CICS
+           END-IF
+           ADD WS-AMOUNT TO WS-MSTR-BALANCE
+           EXEC CICS REWRITE
+                FILE('PLBANKFL')
+                FROM(WS-MASTER-RECORD)
+                RESP(WS-RESP)
+           END-EXEC
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'ERROR CREDITING MASTER BANK ACCOUNT' TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              PERFORM 900-RETURN-CICS
+           END-IF
+      *
+      *    --- STEP 3: GET NEXT TRANSACTION ID ---
+           EXEC CICS READ
+                FILE('PLTXNCNT')
+                INTO(WS-COUNT-REC)
+                UPDATE
+                RIDFLD(WS-TXN-KEY)
+                RESP(WS-RESP)
+           END-EXEC
+           ADD 1 TO LAST-TXNID
+           MOVE LAST-TXNID TO WS-TXNID
+           EXEC CICS REWRITE
+                FILE('PLTXNCNT')
+                FROM(WS-COUNT-REC)
+                RESP(WS-RESP)
+           END-EXEC
+      *
+      *    --- STEP 4: UPDATE LOAN OUTSTANDING ---
+           EXEC CICS READ
+                FILE('PLLOANFL')
+                INTO(WS-LOAN-RECORD)
+                UPDATE
+                RIDFLD(WS-ACCNO)
+                RESP(WS-RESP)
+           END-EXEC
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'ERROR LOCKING LOAN RECORD'           TO CRMSGO
+              EXEC CICS SEND MAP('CURETRY')
+                   MAPSET('PLCTCSH')
+                   FREEKB
+              END-EXEC
+              PERFORM 900-RETURN-CICS
+           END-IF
+           SUBTRACT WS-AMOUNT FROM WS-OUTSTDG GIVING NEW-OUTSTDG
+           MOVE NEW-OUTSTDG TO WS-OUTSTDG
+           EXEC CICS REWRITE
+                FILE('PLLOANFL')
+                FROM(WS-LOAN-RECORD)
+                LENGTH(150)
+                RESP(WS-RESP)
+           END-EXEC
+      *
+      *    --- STEP 5: BUILD AND WRITE TRANSACTION RECORD ---
+           EXEC CICS ASKTIME
+                ABSTIME(WS-ABSTIME)
+           END-EXEC
+           EXEC CICS FORMATTIME
+                ABSTIME(WS-ABSTIME)
+                DDMMYYYY(WS-DATE)
+                DATESEP('/')
+           END-EXEC
+           MOVE WS-LOAN-ACT-NO TO WS-LACCTNO
+           MOVE WS-DATE        TO WS-TXNDATE
+           MOVE 'ONLINE '      TO WS-TXNMODE
+           MOVE 'REPAYMENT'    TO WS-TXNTYPE
+           MOVE WS-AMOUNT      TO WS-TXNAMT
+           MOVE NEW-OUTSTDG    TO WS-TXNOUTSTD
+           MOVE 'BNKCASH '     TO WS-ENTRYBY
+      *
+           EXEC CICS WRITE
+                FILE('PLTXNFL')
+                FROM(WS-TXN-RECORD)
+                LENGTH(80)
+                RIDFLD(WS-TXNID)
+                RESP(WS-RESP)
+           END-EXEC
+           EXEC CICS WRITE
+                FILE('PLLDGR')
+                FROM(WS-TXN-RECORD)
+                LENGTH(80)
+                RIDFLD(WS-TXNID)
+                RESP(WS-RESP)
+           END-EXEC
+      *
+      *    --- SUCCESS: REFRESH SCREEN WITH UPDATED BALANCES ---
+           PERFORM 500-FETCH-CUSTDETAILS
+           PERFORM 600-SENDDATA
+           MOVE 'REPAYMENT SUCCESSFUL VIA BANK TRANSFER' TO CRMSGO
+           EXEC CICS SEND MAP('CURETRY')
+                MAPSET('PLCTCSH')
+                ERASE
+                FREEKB
+           END-EXEC.
+      *
+      *----------------------------------------------------------------*
+      * 900-RETURN-CICS                                                 *
+      *   Return control to CICS with transaction ID and commarea       *
+      *----------------------------------------------------------------*
+       900-RETURN-CICS.
+           EXEC CICS RETURN
+                TRANSID('I007')
+                COMMAREA(WS-COMMAREA)
+                LENGTH(7)
+           END-EXEC.
+
