@@ -1,0 +1,196 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. DAILYRPT.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+
+           SELECT TXN-FILE ASSIGN TO TXNKSDS
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS DYNAMIC
+               RECORD KEY IS LACCNO.
+
+           SELECT LOAN-FILE ASSIGN TO LOANKSDS
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS DYNAMIC
+               RECORD KEY IS L-LOAN-ACT-NO.
+
+           SELECT OUT-FILE ASSIGN TO OUTRPT
+               ORGANIZATION IS SEQUENTIAL.
+
+       DATA DIVISION.
+       FILE SECTION.
+
+       FD TXN-FILE.
+       01 TXN-REC.
+          05 LACCNO    PIC X(6).
+          05 LOANID    PIC X(6).
+          05 TXNDATE   PIC X(10).
+          05 TXNMODE   PIC X(7).
+          05 TXNTYPE   PIC X(9).
+          05 TXNAMT    PIC 9(6).
+          05 OUTSTDG   PIC 9(6).
+          05 ENTRYBY   PIC X(6).
+          05 FILLER    PIC X(24).
+
+       FD LOAN-FILE.
+       01 WS-LOAN-RECORD.
+          05 L-LOAN-ACT-NO PIC X(6).
+          05 L-CUST-ID     PIC X(6).
+          05 L-SCHEME      PIC X(1).
+          05 L-LOAN-AMT    PIC 9(6).
+          05 L-TENURE      PIC 9(3).
+          05 L-INTEREST    PIC 9(2).
+          05 L-BANK-ACCT   PIC X(10).
+          05 L-INCOME      PIC 9(6).
+          05 L-SURETY-ASSET PIC X(10).
+          05 L-SURETY-VAL  PIC 9(6).
+          05 L-SURETY-ACCT PIC X(6).
+          05 L-OUTSTDG     PIC 9(6).
+          05 L-PAID-TO-DATE PIC 9(8).
+          05 L-NEXT-DUE-DT PIC 9(8).
+          05 L-DAYS-OVERD  PIC 9(3).
+          05 L-PENALTY     PIC 9(6).
+          05 L-STATUS      PIC X(1).
+          05 L-OPEN-DATE   PIC 9(8).
+          05 L-CLOSE-DATE  PIC 9(8).
+          05 L-NXT-INSTALLMNT PIC 9(6).
+          05 L-FIRST-INST  PIC 9(6).
+          05 L-INSTALLMNT-AMT PIC 9(6).
+          05 EXTRA-SPACE   PIC X(22).
+
+       FD OUT-FILE
+             RECORDING MODE IS F.
+       01 OUT-REC.
+          05 OUT-KEY             PIC X(10).
+          05 TOTAL-COLLECTED     PIC 9(9).
+          05 NO-OF-ACCOUNTS      PIC 9(6).
+          05 CASH-INFLOW         PIC 9(9).
+          05 BANK-TRANSFER       PIC 9(9).
+          05 ACTIVE-ACCOUNTS     PIC 9(6).
+          05 TOTAL-OUTSTANDING   PIC 9(9).
+          05 OVERDUE-ACCOUNTS    PIC 9(6).
+          05 TOTAL-OVERDUE-AMT   PIC 9(9).
+          05 PENALTY-LEVIED      PIC 9(9).
+          05 ACCOUNTS-OPENED     PIC 9(6).
+          05 AMOUNT-DISBURSED    PIC 9(9).
+
+       WORKING-STORAGE SECTION.
+
+       01 WS-TODAY-DATE        PIC X(10) VALUE '27/04/2026'.
+       01 WS-LOAN-DATE-CHAR    PIC X(10).
+
+       01 WS-EOF-TXN           PIC X VALUE 'N'.
+       01 WS-EOF-LOAN          PIC X VALUE 'N'.
+
+       PROCEDURE DIVISION.
+
+       MAIN-PARA.
+           PERFORM INIT-PARA
+           PERFORM PROCESS-TXN
+           PERFORM PROCESS-LOAN
+           PERFORM WRITE-OUTPUT
+           PERFORM END-PARA.
+
+       INIT-PARA.
+           OPEN INPUT TXN-FILE LOAN-FILE
+                OUTPUT OUT-FILE
+
+           MOVE ZEROES TO OUT-REC.
+
+       PROCESS-TXN.
+
+           MOVE SPACES TO LACCNO
+
+           START TXN-FILE KEY >= LACCNO
+               INVALID KEY MOVE 'Y' TO WS-EOF-TXN
+           END-START
+
+           PERFORM UNTIL WS-EOF-TXN = 'Y'
+
+               READ TXN-FILE NEXT
+                   AT END MOVE 'Y' TO WS-EOF-TXN
+                   NOT AT END
+
+                       IF TXNDATE = WS-TODAY-DATE
+
+                           ADD TXNAMT TO TOTAL-COLLECTED
+                           ADD 1 TO NO-OF-ACCOUNTS
+
+                           IF TXNMODE = 'OFFLINE'
+                               ADD TXNAMT TO CASH-INFLOW
+                           END-IF
+
+                           IF TXNMODE (1:6) = 'ONLINE'
+                               ADD TXNAMT TO BANK-TRANSFER
+                           END-IF
+
+                       END-IF
+
+               END-READ
+
+           END-PERFORM.
+
+       PROCESS-LOAN.
+
+           MOVE SPACES TO L-LOAN-ACT-NO
+
+           START LOAN-FILE KEY >= L-LOAN-ACT-NO
+               INVALID KEY MOVE 'Y' TO WS-EOF-LOAN
+           END-START
+
+           PERFORM UNTIL WS-EOF-LOAN = 'Y'
+
+               READ LOAN-FILE NEXT
+                   AT END MOVE 'Y' TO WS-EOF-LOAN
+                   NOT AT END
+                       MOVE 'DASHBOARDK' TO OUT-KEY
+      *                *> ACTIVE ACCOUNTS
+                       IF L-STATUS = 'A'
+                           ADD 1 TO ACTIVE-ACCOUNTS
+                       END-IF
+
+      *                *> TOTAL OUTSTANDING
+                       ADD L-OUTSTDG TO TOTAL-OUTSTANDING
+
+      *                *> OVERDUE
+                       IF L-DAYS-OVERD > 0
+                           ADD 1 TO OVERDUE-ACCOUNTS
+                           ADD L-NXT-INSTALLMNT
+                               TO TOTAL-OVERDUE-AMT
+                       END-IF
+
+      *                *> PENALTY
+                       ADD L-PENALTY TO PENALTY-LEVIED
+
+      *                *> CONVERT DATE (DDMMYYYY → DD/MM/YYYY)
+                       MOVE SPACES TO WS-LOAN-DATE-CHAR
+
+                       MOVE L-OPEN-DATE(1:2)
+                           TO WS-LOAN-DATE-CHAR(1:2)
+                       MOVE '/'
+                           TO WS-LOAN-DATE-CHAR(3:1)
+                       MOVE L-OPEN-DATE(3:2)
+                           TO WS-LOAN-DATE-CHAR(4:2)
+                       MOVE '/'
+                           TO WS-LOAN-DATE-CHAR(6:1)
+                       MOVE L-OPEN-DATE(5:4)
+                           TO WS-LOAN-DATE-CHAR(7:4)
+
+      *                *> OPEN TODAY
+                       IF WS-LOAN-DATE-CHAR = WS-TODAY-DATE
+                           ADD 1 TO ACCOUNTS-OPENED
+                           ADD L-LOAN-AMT TO AMOUNT-DISBURSED
+                       END-IF
+
+               END-READ
+
+           END-PERFORM.
+
+       WRITE-OUTPUT.
+           WRITE OUT-REC.
+
+       END-PARA.
+           CLOSE TXN-FILE LOAN-FILE OUT-FILE.
+           STOP RUN.
+
