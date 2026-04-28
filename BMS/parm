@@ -1,0 +1,143 @@
+PARM    DFHMSD MODE=INOUT,LANG=COBOL,STORAGE=AUTO,TYPE=&SYSPARM,       X
+                TIOAPFX=YES,CTRL=FREEKB,                                X
+                MAPATTS=(COLOR,HILIGHT)                                  
+ PLPR    DFHMDI SIZE=(24,80),LINE=1,COLUMN=1                             
+         DFHMDF POS=(2,15),                                             X
+                LENGTH=23,                                              X
+                ATTRB=(NORM,PROT),                                      X
+                INITIAL='PAISA LELO - PARAMETERS'                        
+ *****                                                                   
+         DFHMDF POS=(3,60),                                             X
+                LENGTH=6,                                               X
+                ATTRB=(NORM,PROT),                                      X
+                INITIAL='DATE :'                                         
+ CCDATE  DFHMDF POS=(3,67),                                             X
+                         LENGTH=10,                                              
+                ATTRB=(NORM,PROT),HILIGHT=UNDERLINE                      
+         DFHMDF POS=(3,78),LENGTH=1,ATTRB=ASKIP                          
+ *****                                                                   
+         DFHMDF POS=(4,3),                                              X
+                LENGTH=74,                                              X
+                ATTRB=(NORM,PROT),                                      X
+                INITIAL='-----------------------------------------------X
+                -----------------------------'                           
+ *****                                                                   
+         DFHMDF POS=(6,6),                                              X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='INTEREST     :'               
+ INTRST  DFHMDF POS=(6,21),                                             X
+                LENGTH=2,                                               X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(6,24),LENGTH=1,ATTRB=ASKIP                          
+                  DFHMDF POS=(6,44),                                             X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='NO OF LOANS  :'               
+ NOLNS   DFHMDF POS=(6,59),                                             X
+                LENGTH=1,                                               X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(6,61),LENGTH=1,ATTRB=ASKIP                          
+ *****                                                                   
+         DFHMDF POS=(8,6),                                              X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='MAX LOANS    :'               
+ MAXLNS  DFHMDF POS=(8,21),                                             X
+                LENGTH=6,                                               X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(8,28),LENGTH=1,ATTRB=ASKIP                          
+         DFHMDF POS=(8,44),                                             X
+                LENGTH=14,                                              X
+ATTRB=(NORM,PROT),INITIAL='MIN LOANS    :'
+ MINLNS  DFHMDF POS=(8,59),                                             X
+                LENGTH=6,                                               X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(8,66),LENGTH=1,ATTRB=ASKIP                          
+ *****                                                                   
+         DFHMDF POS=(10,6),                                             X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='MAX TENURE   :'               
+ MAXTEN  DFHMDF POS=(10,21),                                            X
+                LENGTH=3,                                               X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(10,25),LENGTH=1,ATTRB=ASKIP                         
+         DFHMDF POS=(10,44),                                            X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='MIN TENURE   :'               
+ MINTEN  DFHMDF POS=(10,59),                                            X
+                LENGTH=3,                                               X   
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(10,63),LENGTH=1,ATTRB=ASKIP                         
+ *****                                                                   
+         DFHMDF POS=(12,6),                                             X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='MIN AGE      :'               
+ MINAGE  DFHMDF POS=(12,21),                                            X
+                LENGTH=2,                                               X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(12,24),LENGTH=1,ATTRB=ASKIP                         
+         DFHMDF POS=(12,44),                                            X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='SURETY RATIO :'               
+ SURRTO  DFHMDF POS=(12,59),                                            X
+                LENGTH=3,                                               X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(12,63),LENGTH=1,ATTRB=ASKIP
+*****                                                                   
+        DFHMDF POS=(14,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='PENALTY      :'               
+PENLTY  DFHMDF POS=(14,21),                                            X
+               LENGTH=3,                                               X
+               ATTRB=(NORM,PROT)                                        
+        DFHMDF POS=(14,25),LENGTH=1,ATTRB=ASKIP                         
+        DFHMDF POS=(14,44),                                            X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='GRACE PERIOD :'               
+GRCPRD  DFHMDF POS=(14,59),                                            X
+               LENGTH=3,                                               X
+               ATTRB=(NORM,PROT)                                        
+        DFHMDF POS=(14,63),LENGTH=1,ATTRB=ASKIP                         
+******                                                                  
+        DFHMDF POS=(16,6),                                             X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='LOCAL        :'               
+ LOCAL   DFHMDF POS=(16,21),                                            X
+                LENGTH=10,                                              X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(16,32),LENGTH=1,ATTRB=ASKIP                         
+         DFHMDF POS=(16,44),                                            X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='NON-LOCAL1   :'               
+ NONLCL1 DFHMDF POS=(16,59),                                            X
+                LENGTH=10,                                              X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(16,70),LENGTH=1,ATTRB=ASKIP                         
+ ******                                                                  
+         DFHMDF POS=(18,6),                                             X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='NON-LOCAL2   :'               
+  NONLCL2 DFHMDF POS=(18,21),                                            X
+                LENGTH=10,                                              X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(18,32),LENGTH=1,ATTRB=ASKIP                         
+         DFHMDF POS=(18,44),                                            X
+                LENGTH=14,                                              X
+                ATTRB=(NORM,PROT),INITIAL='NON-LOCAL3   :'               
+ NONLCL3 DFHMDF POS=(18,59),                                            X
+                LENGTH=10,                                              X
+                ATTRB=(NORM,PROT)                                        
+         DFHMDF POS=(18,70),LENGTH=1,ATTRB=ASKIP                         
+ ******                                                                  
+         DFHMDF POS=(19,3),                                             X
+                LENGTH=74,                                              X
+                ATTRB=(NORM,PROT),                                      X
+                INITIAL='-----------------------------------------------X
+                -----------------------------'   
+   *****                                                                   
+         DFHMDF POS=(22,6),                                             X
+                LENGTH=22,                                              X
+                ATTRB=(NORM,PROT),                                      X
+                INITIAL='PF3=BACK, PF5=RE-WRITE'                         
+ MSG     DFHMDF POS=(24,10),LENGTH=40,ATTRB=(PROT)                       
+ *****                                                                   
+         DFHMSD TYPE=FINAL                                               
+                END                                                        
