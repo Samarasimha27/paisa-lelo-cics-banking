@@ -1,0 +1,116 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. PACTMOD.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       COPY DFHAID.
+       COPY PACTSCR.
+
+       01 WS-RESP PIC S9(8) COMP.
+       01 WS-MSG  PIC X(40).
+       01 WS-VAL  PIC X(1).
+       01 WS-MSG2 PIC X(8) VALUE 'IN OTHER'.
+
+       01 WS-COMMAREA.
+          05 WS-USER-ID   PIC X(6).
+          05 WS-USER-TYPE PIC X(1).
+
+       LINKAGE SECTION.
+       01 DFHCOMMAREA.
+          05 CM-USER-ID   PIC X(6).
+          05 CM-USER-TYPE PIC X(1).
+
+       PROCEDURE DIVISION.
+
+       MAIN.
+
+           IF EIBCALEN = 0
+               PERFORM SEND-SCREEN
+               EXEC CICS RETURN TRANSID('PACT')
+                        COMMAREA(WS-COMMAREA)
+                        LENGTH(7)
+                        END-EXEC
+           END-IF
+           MOVE DFHCOMMAREA TO WS-COMMAREA
+           IF WS-USER-TYPE = 'I'
+               PERFORM SEND-SCREEN
+               MOVE LOW-VALUES TO WS-USER-TYPE
+               EXEC CICS RETURN TRANSID('PACT')
+                        COMMAREA(WS-COMMAREA)
+                        LENGTH(7)
+                        END-EXEC
+           END-IF
+
+           IF EIBAID = DFHPF3
+      *        EXEC CICS RETURN TRANSID('PMASTT') END-EXEC
+               MOVE 'M' TO WS-USER-TYPE
+               EXEC CICS XCTL PROGRAM('PMASTT')
+                        COMMAREA(WS-COMMAREA)
+                        LENGTH(7)
+                        END-EXEC
+           END-IF
+
+           PERFORM RECEIVE-SCREEN.
+           PERFORM PROCESS-OPTION.
+
+
+       END-PGM.
+               EXEC CICS RETURN TRANSID('PACT')
+                        COMMAREA(WS-COMMAREA)
+                        LENGTH(7)
+                        END-EXEC.
+
+       SEND-SCREEN.
+           MOVE LOW-VALUES TO MAP1O
+      **   MOVE CM-USER-ID TO CMACNOO
+           MOVE SPACES     TO MSGO
+
+           EXEC CICS SEND
+                MAP('MAP1')
+                MAPSET('PACTSCR')
+                ERASE
+           END-EXEC.
+
+       RECEIVE-SCREEN.
+
+           EXEC CICS RECEIVE
+                MAP('MAP1')
+                MAPSET('PACTSCR')
+           END-EXEC.
+      *    MOVE ACHOII TO WS-VAL.
+
+       PROCESS-OPTION.
+           EVALUATE ACHOII(1:1)
+
+               WHEN '1'
+                   MOVE 'I' TO WS-USER-TYPE
+                   EXEC CICS XCTL PROGRAM('PLACRE2')
+                        COMMAREA(WS-COMMAREA)
+                        LENGTH(7)
+                   END-EXEC
+
+               WHEN '2'
+                   MOVE 'R' TO WS-USER-TYPE
+                   EXEC CICS XCTL PROGRAM('MSTACINQ')
+                        COMMAREA(WS-COMMAREA)
+                        LENGTH(7)
+                   END-EXEC
+
+               WHEN '3'
+                   MOVE 'T' TO WS-USER-TYPE
+                   EXEC CICS XCTL PROGRAM('PLCLOSE')
+                        COMMAREA(DFHCOMMAREA)
+                        LENGTH(7)
+                   END-EXEC
+
+               WHEN OTHER
+                   MOVE 'INVALID OPTION' TO MSGO
+                   EXEC CICS SEND TEXT
+                   FROM (WS-VAL) LENGTH(1)
+                   END-EXEC
+                   PERFORM SEND-SCREEN
+
+           END-EVALUATE.
+
