@@ -1,0 +1,167 @@
+PLACINF DFHMSD MODE=INOUT,LANG=COBOL,STORAGE=AUTO,TYPE=&SYSPARM,       X
+               TIOAPFX=YES,CTRL=FREEKB,                                X
+               MAPATTS=(COLOR,HILIGHT)
+ACTINF  DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+        DFHMDF POS=(2,15),                                             X
+               LENGTH=40,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='PAISA LELO - ACCOUNT INFORMATION ENQUIRY'
+*****
+        DFHMDF POS=(4,55),                                             X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='DATE :'
+AIEDATE DFHMDF POS=(4,62),                                             X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,PROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(4,73),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(5,6),                                              X
+               LENGTH=12,                                              X
+               ATTRB=(NORM,PROT),INITIAL='ACCOUNT NO :'
+AIEACNO DFHMDF POS=(5,19),                                             X
+               LENGTH=6,                                               X
+               ATTRB=(IC,NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(5,26),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(6,3),                                              X
+               LENGTH=74,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+*****
+        DFHMDF POS=(8,6),                                              X
+               LENGTH=16,                                              X
+               ATTRB=(NORM,PROT),INITIAL='CUSTOMER DETAILS'
+*****
+        DFHMDF POS=(10,6),                                             X
+               LENGTH=9,                                               X
+               ATTRB=(NORM,PROT),INITIAL='NAME    :'
+AIENAME DFHMDF POS=(10,16),                                            X
+               LENGTH=20,                                              X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(10,37),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(10,41),                                            X
+               LENGTH=12,                                              X
+               ATTRB=(NORM,PROT),INITIAL='LOAN AMOUNT:'
+AIEAMT  DFHMDF POS=(10,54),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(10,61),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(11,6),                                             X
+               LENGTH=9,                                               X
+               ATTRB=(NORM,PROT),INITIAL='AADHAAR :'
+AIEADHR DFHMDF POS=(11,16),                                            X
+               LENGTH=12,                                              X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,29),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(11,41),                                            X
+               LENGTH=12,                                              X
+               ATTRB=(NORM,PROT),INITIAL='TENURE     :'
+AIETNR  DFHMDF POS=(11,54),                                            X
+               LENGTH=2,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,57),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(12,6),                                             X
+               LENGTH=9,                                               X
+               ATTRB=(NORM,PROT),INITIAL='PHONE   :'
+AIEPHNO DFHMDF POS=(12,16),                                            X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(12,27),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(12,41),                                            X
+               LENGTH=12,                                              X
+               ATTRB=(NORM,PROT),INITIAL='INTEREST   :'
+AIEINT  DFHMDF POS=(12,54),                                            X
+               LENGTH=2,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(12,57),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(13,6),                                             X
+               LENGTH=9,                                               X
+               ATTRB=(NORM,PROT),INITIAL='ADDRESS :'
+AIEADRS DFHMDF POS=(13,16),                                            X
+               LENGTH=12,                                              X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(13,29),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(13,41),                                            X
+               LENGTH=12,                                              X
+               ATTRB=(NORM,PROT),INITIAL='SCHEME     :'
+AIESCHE DFHMDF POS=(13,54),                                            X
+               LENGTH=1,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(13,56),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(14,3),                                             X
+               LENGTH=74,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+*****
+        DFHMDF POS=(16,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='ACCOUNT STATUS'
+*****
+        DFHMDF POS=(18,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='OUTSTANDING  :'
+AIEOUT  DFHMDF POS=(18,21),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(18,28),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(18,41),                                            X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='DAYS OVERDUE :'
+AIEOVRD DFHMDF POS=(18,56),                                            X
+               LENGTH=3,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(18,60),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(19,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='PAID TO DATE :'
+AIEPTD  DFHMDF POS=(19,21),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(19,28),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(19,41),                                            X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='PENALTY      :'
+AIEPNL  DFHMDF POS=(19,56),                                            X
+               LENGTH=8,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(19,65),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(20,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='NEXT DUE     :'
+AIENXTD DFHMDF POS=(20,21),                                            X
+               LENGTH=8,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(20,30),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(20,41),                                            X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='STATUS       :'
+AIESTS  DFHMDF POS=(20,56),                                            X
+               LENGTH=1,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(20,58),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(21,3),                                             X
+               LENGTH=74,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+*****
+        DFHMDF POS=(23,6),                                             X
+               LENGTH=8,                                               X
+               ATTRB=(NORM,PROT),INITIAL='PF3=BACK'
+*****
+AIEMSG  DFHMDF POS=(24,6),                                             X
+               LENGTH=60,                                              X
+               ATTRB=(NORM,PROT)
+        DFHMSD TYPE=FINAL
+               END
+
