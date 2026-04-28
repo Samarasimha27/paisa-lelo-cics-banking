@@ -1,0 +1,150 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. PLCODE.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+
+       COPY DFHAID.
+       COPY PLOGIN.
+
+       01  WS-RESP       PIC S9(8) COMP.
+       01  WS-USRID      PIC X(6).
+       01  WS-PSSWD      PIC X(4).
+       01  WS-TYPE       PIC X(1).
+       01  WS-OTHER      PIC X(8) VALUE 'IN OTHER'.
+
+       01  LOGIN-REC.
+           05 USERID     PIC 9(6).
+           05 EXTRA1     PIC X(1).
+           05 PSSWD      PIC 9(4).
+           05 EXTRA2     PIC X(1).
+           05 LTYPE      PIC X(1).
+           05 EXTRA3     PIC X(2).
+
+       01 WSCOMMAREA.
+           05 CM-USER-ID     PIC 9(6).
+           05 CM-USER-TYPE   PIC X(1).
+
+       PROCEDURE DIVISION.
+
+       MAIN.
+           MOVE LOW-VALUES TO MAP1O
+           IF EIBCALEN = 0
+              MOVE SPACES TO MSGO
+              MOVE SPACES TO LACTNOO LPWDO LTYPEO
+              PERFORM SEND-LOGIN
+              EXEC CICS RETURN TRANSID('PLOG')
+                              COMMAREA(WSCOMMAREA)
+                              LENGTH(7)
+                              END-EXEC
+           ELSE
+              PERFORM KEY-CHECK
+           END-IF.
+
+       KEY-CHECK.
+
+           EVALUATE EIBAID
+
+           WHEN DFHENTER
+
+                PERFORM RECEIVE-LOGIN
+                PERFORM READ-USER
+
+                IF WS-RESP = DFHRESP(NORMAL)
+
+                   IF WS-PSSWD = PSSWD
+                      AND WS-TYPE = LTYPE
+
+                      MOVE WS-USRID TO CM-USER-ID
+                      MOVE WS-TYPE  TO CM-USER-TYPE
+
+                      IF CM-USER-TYPE = 'C'
+                         EXEC CICS XCTL
+                              PROGRAM('PCUST1')
+                              COMMAREA(WSCOMMAREA)
+                              LENGTH(7)
+                         END-EXEC
+                      ELSE
+                         EXEC CICS XCTL
+                              PROGRAM('PMASTT')
+                              COMMAREA(WSCOMMAREA)
+                              LENGTH(7)
+                         END-EXEC
+                      END-IF
+
+                   ELSE
+                      MOVE 'INVALID PASSWORD/TYPE' TO MSGO
+                      PERFORM SEND-ERROR
+                   END-IF
+
+                ELSE
+                   MOVE 'USER NOT FOUND' TO MSGO
+                   PERFORM SEND-ERROR
+                END-IF
+
+           WHEN DFHPF3
+                PERFORM SEND-LOGIN
+                EXEC CICS RETURN TRANSID('PLOG')
+                     COMMAREA(WSCOMMAREA)
+                     LENGTH(7)
+                     END-EXEC
+           WHEN OTHER
+                EXEC CICS SEND TEXT FROM(WS-OTHER) LENGTH(8) ERASE
+                END-EXEC
+                PERFORM SEND-LOGIN
+                EXEC CICS RETURN TRANSID('PLOG')
+                     COMMAREA(WSCOMMAREA)
+                     LENGTH(7)
+                     END-EXEC
+
+           END-EVALUATE.
+
+       SEND-LOGIN.
+
+           EXEC CICS SEND
+                MAP('MAP1')
+                MAPSET('PLOGIN')
+                ERASE
+           END-EXEC.
+
+       SEND-ERROR.
+
+           EXEC CICS SEND
+                MAP('MAP1')
+                MAPSET('PLOGIN')
+                DATAONLY
+           END-EXEC
+
+           EXEC CICS RETURN TRANSID('PLOG')
+                     COMMAREA(WSCOMMAREA)
+                     LENGTH(7)
+                     END-EXEC.
+
+       RECEIVE-LOGIN.
+
+           EXEC CICS RECEIVE
+                MAP('MAP1')
+                MAPSET('PLOGIN')
+           END-EXEC
+
+            OVE LACTNOI TO WS-USRID
+           MOVE LPWDI   TO WS-PSSWD
+           MOVE LTYPEI  TO WS-TYPE.
+
+       READ-USER.
+
+           EXEC CICS READ
+                FILE('LOGF')
+                INTO(LOGIN-REC)
+                RIDFLD(WS-USRID)
+                RESP(WS-RESP)
+           END-EXEC.
+
+       RETURN-CICS.
+
+           EXEC CICS RETURN
+                TRANSID('PLOG')
+                COMMAREA(WSCOMMAREA)
+                LENGTH(7)
+           END-EXEC.
+
