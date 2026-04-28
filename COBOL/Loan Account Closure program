@@ -1,0 +1,209 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. PLCLOSE.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       COPY DFHAID.
+       COPY PACTCLS.
+       01  WS-RESP       PIC S9(8) COMP.
+       01  WS-ACCNO      PIC X(6).
+       01  WS-DATE      PIC X(10).
+       01  WS-ABSTIME    PIC X(10).
+       01  WS-CLOSECH    PIC X.
+       01  WS-MSG        PIC X(5) VALUE 'HELLO'.
+
+      *
+       01  WS-LOAN-RECORD.
+           05 WS-LOAN-ACT-NO        PIC X(6).
+           05 WS-CUST-ID            PIC X(6).
+           05 WS-SCHEME             PIC X(1).
+           05 WS-LOAN-AMT           PIC 9(6).
+           05 WS-TENURE             PIC X(3).
+           05 WS-INTEREST           PIC 9(2).
+           05 WS-BANK-ACCT          PIC X(10).
+           05 WS-INCOME             PIC 9(6).
+           05 WS-SURETY-ASSET       PIC X(10).
+           05 WS-SURETY-VAL         PIC 9(6).
+           05 WS-SURETY-ACCT        PIC X(6).
+           05 WS-OUTSTDG            PIC 9(6).
+           05 WS-PAID-TO-DATE       PIC X(8).
+           05 WS-NEXT-DUE-DT        PIC X(8).
+           05 WS-DAYS-OVERD         PIC 9(3).
+           05 WS-PENALTY            PIC 9(6).
+           05 WS-STATUS             PIC X(1).
+           05 WS-OPEN-DATE          PIC X(8).
+           05 WS-CLOSE-DATE         PIC X(8).
+           05 WS-NXT-INSTALLMNT     PIC 9(6).
+           05 EXTRA-FILLER          PIC X(37).
+      *
+       01  WS-CUSTOMER-RECORD.
+           05 WS-CUST-ID-REC    PIC X(6).
+           05 WS-CUST-NAME      PIC X(20).
+           05 WS-AADHAR         PIC X(12).
+           05 WS-PHONE          PIC X(10).
+           05 WS-ADDRESS        PIC X(12).
+           05 WS-IS-LOCAL       PIC X(1).
+           05 WS-AGE            PIC 9(2).
+           05 WS-LOANS          PIC 9(2).
+           05 WS-RATING         PIC X(1).
+           05 FILLER-EXTRA      PIC X(14).
+       01  WS-COMMAREA.
+           05 WS-USER-ID           PIC X(6).
+           05 WS-SCREEN-CODE       PIC X(1).
+      *
+       LINKAGE SECTION.
+       01  DFHCOMMAREA.
+           05 USER-ID           PIC X(6).
+           05 USER-TYPE         PIC X(1).
+       PROCEDURE DIVISION.
+       000-MAIN-PARA.
+           IF EIBCALEN = 0
+              MOVE LOW-VALUES TO CLOSE1O
+              PERFORM 100-SEND-SCREEN
+              PERFORM 900-RETURN-CICS
+           END-IF
+           MOVE DFHCOMMAREA TO WS-COMMAREA
+           IF WS-SCREEN-CODE = 'T'
+              MOVE LOW-VALUES TO CLOSE1O
+              PERFORM 100-SEND-SCREEN
+              PERFORM 900-RETURN-CICS
+           END-IF
+              PERFORM 200-FETCH-ACCOUNT
+              PERFORM 900-RETURN-CICS.
+
+      *
+       100-SEND-SCREEN.
+           EXEC CICS SEND MAP('CLOSE1')
+                MAPSET('PACTCLS')
+                ERASE
+                FREEKB
+           END-EXEC
+           MOVE LOW-VALUES TO WS-SCREEN-CODE.
+      *
+       200-FETCH-ACCOUNT.
+           EVALUATE EIBAID
+
+      *================ ENTER KEY =================
+           WHEN DFHENTER
+
+                 PERFORM 300-RECEIVE-SCREEN
+                 PERFORM 400-READFILE
+                 PERFORM 500-FETCH-CUSTDETAILS
+                 IF WS-RESP = DFHRESP(NORMAL)
+                    PERFORM 600-SENDDATA
+                 ELSE
+                    MOVE 'ACCOUNT DOES NOT EXIST' TO MSGO
+                    PERFORM 100-SEND-SCREEN
+                    PERFORM 900-RETURN-CICS
+                 END-IF
+      *================ PF3 KEY =================
+           WHEN DFHPF3
+                 MOVE 'M' TO WS-SCREEN-CODE
+                 EXEC CICS XCTL PROGRAM('PACTMOD')
+                      COMMAREA(WS-COMMAREA)
+                      LENGTH(7)
+                 END-EXEC
+      *================ OTHER KEYS =================
+           WHEN DFHPF5
+             EXEC CICS ASKTIME
+             ABSTIME(WS-ABSTIME)
+             END-EXEC
+                EXEC CICS RECEIVE MAP('CLOSE1')
+                     MAPSET('PACTCLS')
+                END-EXEC
+                MOVE CLACNOI(1:6) TO WS-ACCNO
+                MOVE CLCLOSI(1:1) TO WS-CLOSECH
+                MOVE WS-ABSTIME   TO WS-CLOSE-DATE
+                EXEC CICS READ
+                     FILE('PLLOANFL')
+                     INTO(WS-LOAN-RECORD)
+                     UPDATE
+                     RIDFLD(WS-ACCNO)
+                     RESP(WS-RESP)
+                END-EXEC
+              EXEC CICS SEND TEXT FROM(WS-CLOSECH) LENGTH(1) END-EXEC
+              IF WS-OUTSTDG = 000000
+                 AND WS-PENALTY = 000000
+                 AND WS-CLOSECH = 'Y'
+                 MOVE 'C' TO WS-STATUS
+                 EXEC CICS SEND TEXT
+                       FROM(WS-MSG)
+                       LENGTH(5)
+                 END-EXEC
+                 EXEC CICS REWRITE
+                      FILE('PLLOANFL')
+                      FROM(WS-LOAN-RECORD)
+                      LENGTH(150)
+                      RESP(WS-RESP)
+                 END-EXEC
+                EXEC CICS READ
+                     FILE('PLCUSTDT')
+                     INTO(WS-CUSTOMER-RECORD)
+                     UPDATE
+                     RIDFLD(WS-CUST-ID)
+                     RESP(WS-RESP)
+                END-EXEC
+                MOVE CLREMI TO WS-RATING
+                 EXEC CICS REWRITE
+                      FILE('PLCUSTDT')
+                      FROM(WS-CUSTOMER-RECORD)
+                      LENGTH(80)
+                      RESP(WS-RESP)
+                 END-EXEC
+              END-IF
+           WHEN OTHER
+                PERFORM 100-SEND-SCREEN
+                PERFORM 900-RETURN-CICS
+           END-EVALUATE
+           PERFORM 100-SEND-SCREEN
+           PERFORM 900-RETURN-CICS.
+       300-RECEIVE-SCREEN.
+           EXEC CICS RECEIVE MAP('CLOSE1')
+                MAPSET('PACTCLS')
+           END-EXEC
+           MOVE CLACNOI(1:6) TO WS-ACCNO.
+      *================ READ USER =================
+       400-READFILE.
+           EXEC CICS READ
+                FILE('PLLOANFL')
+                INTO(WS-LOAN-RECORD)
+                RIDFLD(WS-ACCNO)
+                RESP(WS-RESP)
+           END-EXEC.
+      *
+       500-FETCH-CUSTDETAILS.
+           EXEC CICS READ
+                FILE('PLCUSTDT')
+                INTO(WS-CUSTOMER-RECORD)
+                RIDFLD(WS-CUST-ID)
+                RESP(WS-RESP)
+           END-EXEC.
+      *
+       600-SENDDATA.
+      *    DATE CALCULATION
+             EXEC CICS ASKTIME
+             ABSTIME(WS-ABSTIME)
+             END-EXEC
+             EXEC CICS FORMATTIME
+             ABSTIME(WS-ABSTIME)
+             DDMMYYYY(WS-DATE)
+             DATESEP('/')
+             END-EXEC
+      *    CUSTOMER DETIALS
+           MOVE WS-DATE     TO CLDATEO
+           EXEC CICS SEND TEXT FROM(WS-DATE) LENGTH(10) END-EXEC
+           MOVE WS-CUST-NAME TO CLCUSTO
+           MOVE WS-LOAN-AMT  TO CLAMTO
+           MOVE WS-OUTSTDG   TO CLOUTO
+           MOVE WS-PENALTY      TO CLPENTO
+           MOVE WS-SURETY-VAL   TO CLSUVALO
+           MOVE WS-SURETY-ACCT  TO CLSUACO
+           MOVE WS-STATUS       TO CLSTSO
+           PERFORM 100-SEND-SCREEN.
+      *
+       900-RETURN-CICS.
+           EXEC CICS RETURN
+                TRANSID('I006')
+                COMMAREA(WS-COMMAREA)
+                LENGTH(7)
+           END-EXEC.
+
