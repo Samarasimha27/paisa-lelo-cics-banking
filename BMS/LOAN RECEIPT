@@ -1,0 +1,132 @@
+PLREC   DFHMSD MODE=INOUT,LANG=COBOL,STORAGE=AUTO,TYPE=&SYSPARM,       X
+               TIOAPFX=YES,CTRL=FREEKB,                                X
+               MAPATTS=(COLOR,HILIGHT)
+PLLR    DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+        DFHMDF POS=(2,25),                                             X
+               LENGTH=25,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='PAISA LELO - LOAN RECEIPT'
+*****
+        DFHMDF POS=(3,60),                                             X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='DATE :'
+LRDATE  DFHMDF POS=(3,67),                                             X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,PROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(3,78),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(4,19),                                             X
+               LENGTH=41,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='****CONGRATULATIONS LOAN HAS APPROVED****'
+        DFHMDF POS=(4,61),LENGTH=1,ATTRB=ASKIP
+*****
+LNDTLS  DFHMDF POS=(6,30),                                             X
+               LENGTH=12,                                              X
+               ATTRB=(NORM,PROT),INITIAL='LOAN DETAILS'
+        DFHMDF POS=(6,53),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(7,3),                                              X
+               LENGTH=74,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+*****
+        DFHMDF POS=(9,6),                                              X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='CUST ID      :'
+RCSTID  DFHMDF POS=(9,21),                                             X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(9,28),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(9,44),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='PASSWORD     :'
+RPW     DFHMDF POS=(9,59),                                             X
+               LENGTH=4,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(9,64),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(11,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='NAME         :'
+RNAME   DFHMDF POS=(11,21),                                            X
+               LENGTH=20,                                              X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,42),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(11,44),                                            X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='PHONE NUMBER :'
+RPHNO   DFHMDF POS=(11,59),                                            X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,70),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(13,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='LOAN ID      :'
+RLNID   DFHMDF POS=(13,21),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(13,28),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(15,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='ISSUE DATE   :'
+RISUDT  DFHMDF POS=(15,21),                                            X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(15,32),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(15,44),                                            X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='DUE DATE     :'
+RDUEDT  DFHMDF POS=(15,59),                                            X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(15,70),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(17,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='INSTL.AMT    :'
+RINAMT  DFHMDF POS=(17,21),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(17,28),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(17,44),                                            X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='FRST INST.AMT:'
+RFINAMT DFHMDF POS=(17,59),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(17,66),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(19,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='TENURE       :'
+RTENUR  DFHMDF POS=(19,21),                                            X
+               LENGTH=3,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(19,25),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(19,44),                                            X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='LOAN AMOUNT  :'
+RLNAMT  DFHMDF POS=(19,59),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(19,66),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(20,3),                                             X
+               LENGTH=74,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+*****
+        DFHMDF POS=(23,30),                                            X
+               LENGTH=16,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='    F12=PROCEED '
+*****
+        DFHMSD TYPE=FINAL
+               END
+
