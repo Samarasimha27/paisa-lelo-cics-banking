@@ -1,0 +1,107 @@
+LONSET  DFHMSD MODE=INOUT,LANG=COBOL,STORAGE=AUTO,TYPE=&SYSPARM,       X
+               TIOAPFX=YES,CTRL=FREEKB
+LOANSET DFHMDI SIZE=(24,80),MAPATTS=(COLOR,HILIGHT),                   X
+               DSATTS=(COLOR,HILIGHT)
+******
+        DFHMDF POS=(3,20),LENGTH=28,                                   X
+               INITIAL='PAISA LELO - LOAN SETTLEMENT',                 X
+               ATTRB=(NORM,PROT),COLOR=YELLOW
+        DFHMDF POS=(4,58),LENGTH=5,                                    X
+               INITIAL='DATE:',                                        X
+               ATTRB=(NORM,PROT)
+LSDATE  DFHMDF POS=(4,64),LENGTH=8,ATTRB=(NORM,PROT)
+        DFHMDF POS=(4,73),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(6,8),LENGTH=11,INITIAL='ACCOUNT NO:',ATTRB=(PROT)
+LSACNO  DFHMDF POS=(6,20),LENGTH=6,                                    X
+               ATTRB=(IC,NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(6,27),LENGTH=1,ATTRB=ASKIP
+*****
+LINE    DFHMDF POS=(7,3),                                              X
+               LENGTH=74,ATTRB=(NORM,PROT),                            X
+               INITIAL='-----------------------------------------------X
+               ---------------------------'
+        DFHMDF POS=(8,8),LENGTH=32,                                    X
+               INITIAL='SURETY VS DUE AMOUNT CALCULATION',ATTRB=PROT
+*****
+        DFHMDF POS=(10,8),LENGTH=13,INITIAL='CUSTOMER    :',ATTRB=PROT
+LSCUST  DFHMDF POS=(10,22),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(10,33),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(10,35),LENGTH=13,INITIAL='SURETY-NAME :',          X
+               ATTRB=PROT
+LSSUNAM DFHMDF POS=(10,49),LENGTH=10,ATTRB=(PROT)
+        DFHMDF POS=(10,60),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(11,8),LENGTH=13,INITIAL='LOAN-AMOUNT :',ATTRB=PROT
+LSLOAN  DFHMDF POS=(11,22),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,33),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(11,35),LENGTH=13,INITIAL='SURETY-VALUE:',          X
+               ATTRB=PROT
+LSSUVAL DFHMDF POS=(11,49),LENGTH=10,ATTRB=(PROT)
+        DFHMDF POS=(11,60),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(12,8),LENGTH=13,INITIAL='OUTSTANDING :',ATTRB=PROT
+LSOUT   DFHMDF POS=(12,22),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(12,33),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(12,35),LENGTH=13,INITIAL='SURPLUS     :',          X
+               ATTRB=PROT
+LSSURP  DFHMDF POS=(12,49),LENGTH=10,ATTRB=(PROT)
+        DFHMDF POS=(12,60),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(13,8),LENGTH=13,INITIAL='INTREST-DUE :',ATTRB=PROT
+LSINT   DFHMDF POS=(13,22),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(13,33),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(13,35),LENGTH=13,INITIAL='BANK AC-SETL:',          X
+               ATTRB=PROT
+LSBNKAC DFHMDF POS=(13,49),LENGTH=10,ATTRB=(PROT)
+        DFHMDF POS=(13,60),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(14,8),LENGTH=13,INITIAL='PENALTY     :',ATTRB=PROT
+LSPEN   DFHMDF POS=(14,22),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(14,33),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(14,35),LENGTH=13,INITIAL='BATCH-SETL  :',          X
+               ATTRB=PROT
+LSBATCH DFHMDF POS=(14,49),LENGTH=10,ATTRB=(PROT)
+        DFHMDF POS=(14,60),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(15,8),LENGTH=13,INITIAL='TOTAL-DUE   :',ATTRB=PROT
+LSTOTAL DFHMDF POS=(15,22),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(15,33),LENGTH=1,ATTRB=ASKIP
+******
+LINE2   DFHMDF POS=(17,3),                                             X
+               LENGTH=74,ATTRB=(NORM,PROT),                            X
+               INITIAL='-----------------------------------------------X
+               ---------------------------'
+*****
+        DFHMDF POS=(18,8),LENGTH=17,                                   X
+               INITIAL='SETTLEMENT-OPTION',ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(20,8),LENGTH=19,                                   X
+               INITIAL='CLOSE-ACCOUNT(Y/N):',ATTRB=ASKIP
+CLCLOS  DFHMDF POS=(20,28),LENGTH=1,ATTRB=(NORM,UNPROT),               X
+               HILIGHT=UNDERLINE
+        DFHMDF POS=(20,30),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+*****
+MSG     DFHMDF POS=(24,10),LENGTH=40,ATTRB=(PROT)
+OPT     DFHMDF POS=(23,10),LENGTH=40,                                  X
+               INITIAL='F3=BACK  F5=PROCEED  F12=CANCEL',ATTRB=ASKIP
+        DFHMSD TYPE=FINAL
+        END
+
