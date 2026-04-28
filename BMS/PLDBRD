@@ -1,0 +1,158 @@
+DASHBD  DFHMSD MODE=INOUT,LANG=COBOL,STORAGE=AUTO,TYPE=&SYSPARM,       X
+               TIOAPFX=YES,CTRL=FREEKB,DSATTS=(COLOR,HILIGHT),         X
+               MAPATTS=(COLOR,HILIGHT)
+DSHBD   DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+        DFHMDF POS=(2,26),                                             X
+               LENGTH=25,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=YELLOW,                                           X
+               INITIAL='PAISA LELO - DASHBOARD '
+*****
+        DFHMDF POS=(4,57),                                             X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='DATE :'
+DBDATE  DFHMDF POS=(4,64),                                             X
+               LENGTH=10,                                              X
+               ATTRB=(IC,NORM,UNPROT)
+        DFHMDF POS=(4,75),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(5,5),                                              X
+               LENGTH=71,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+******
+        DFHMDF POS=(7,6),                                              X
+               LENGTH=15,                                              X
+               COLOR=YELLOW,                                           X
+               ATTRB=(NORM,PROT),INITIAL='| COLLECTIONS |'
+        DFHMDF POS=(7,45),                                             X
+               LENGTH=18,                                              X
+               COLOR=YELLOW,                                           X
+               ATTRB=(NORM,PROT),INITIAL='| OVERDUE STATUS |'
+******
+        DFHMDF POS=(9,6),                                              X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='TOTAL COLLECTED  :'
+DBTCOL  DFHMDF POS=(9,25),                                             X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(9,32),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(9,45),                                             X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='OVERDUE ACCOUNTS :'
+DBOVRD  DFHMDF POS=(9,64),                                             X
+               LENGTH=2,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(9,67),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(10,6),                                             X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='NO OF ACCOUNTS   :'
+DBNOAC  DFHMDF POS=(10,25),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(10,32),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(10,45),                                            X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='TOTAL OVERDUE AMT:'
+DBTODA  DFHMDF POS=(10,64),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(10,71),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(11,6),                                             X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='CASH INFLOW      :'
+DBCAFL  DFHMDF POS=(11,25),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(11,32),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(11,45),                                            X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='PENALTY LEVIED   :'
+DBPEL   DFHMDF POS=(11,64),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(11,71),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(12,6),                                             X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='BANK TRANSFER    :'
+DBBNKT  DFHMDF POS=(12,25),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(12,32),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(12,45),                                            X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='WRITTEN TO GDG   :'
+DBWGDG  DFHMDF POS=(12,64),                                            X
+               LENGTH=2,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(12,67),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(15,6),                                             X
+               LENGTH=19,                                              X
+               COLOR=YELLOW,                                           X
+               ATTRB=(NORM,PROT),INITIAL='| LOAN PORTFOLIO |'
+        DFHMDF POS=(15,45),                                            X
+               LENGTH=17,                                              X
+               COLOR=YELLOW,                                           X
+               ATTRB=(NORM,PROT),INITIAL='| NEW BUSINESS |'
+******
+        DFHMDF POS=(17,6),                                             X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='ACTIVE ACCOUNTS  :'
+DBATAC  DFHMDF POS=(17,25),                                            X
+               LENGTH=3,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(17,29),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(17,45),                                            X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='ACCOUNTS OPENED  :'
+DBACOP  DFHMDF POS=(17,64),                                            X
+               LENGTH=3,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(17,68),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(18,6),                                             X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='TOTAL OUTSTANDING:'
+DBTOSG  DFHMDF POS=(18,25),                                            X
+               LENGTH=3,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(18,29),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(18,45),                                            X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='DISBURSED TODAY  :'
+DBTDT   DFHMDF POS=(18,64),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(18,71),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(19,6),                                             X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='CLOSED TODAY     :'
+DBTCT   DFHMDF POS=(19,25),                                            X
+               LENGTH=2,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(19,28),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(19,45),                                            X
+               LENGTH=18,                                              X
+               ATTRB=(NORM,PROT),INITIAL='PENDING APPROVAL :'
+DBPNDA  DFHMDF POS=(19,64),                                            X
+               LENGTH=2,                                               X
+               ATTRB=(NORM,UNPROT)
+        DFHMDF POS=(19,67),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMSD TYPE=FINAL
+               END
+
