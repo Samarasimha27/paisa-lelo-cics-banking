@@ -1,0 +1,37 @@
+ACTCLS  DFHMSD TYPE=&SYSPARM,MODE=INOUT,LANG=COBOL,STORAGE=AUTO
+CLOSE1  DFHMDI SIZE=(24,80),MAPATTS=(COLOR,HILIGHT),                   X
+               DSATTS=(COLOR,HILIGHT)
+******
+        DFHMDF POS=(3,20),LENGTH=28,                                   X
+               INITIAL='PAISA LELO - ACCOUNT CLOSURE',                 X
+               ATTRB=ASKIP
+        DFHMDF POS=(3,55),LENGTH=5,                                    X
+               INITIAL='DATE:',                                        X
+               ATTRB=ASKIP
+CLDATE  DFHMDF POS=(3,61),LENGTH=6,ATTRB=(PROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(3,68),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(6,5),LENGTH=11,INITIAL='ACCOUNT NO:',ATTRB=ASKIP
+CLACNO  DFHMDF POS=(6,17),LENGTH=6,                                    X
+               ATTRB=(IC,NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(6,24),LENGTH=1,ATTRB=ASKIP
+*****
+LINE    DFHMDF POS=(7,3),                                              X
+               LENGTH=74,ATTRB=(NORM,PROT),                            X
+               INITIAL='-----------------------------------------------X
+               ---------------------------'
+        DFHMDF POS=(8,5),LENGTH=15,                                    X
+               INITIAL='SETTLEMENT-INFO',ATTRB=ASKIP
+*****
+        DFHMDF POS=(9,8),LENGTH=13,INITIAL='CUSTOMER    :',ATTRB=ASKIP
+CLCUST  DFHMDF POS=(9,22),LENGTH=10,ATTRB=(PROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(9,33),LENGTH=1,ATTRB=ASKIP
+*****
+*****
+        DFHMDF POS=(9,35),LENGTH=13,INITIAL='SURETY-NAME :',ATTRB=ASKIP
+CLSUNAM DFHMDF POS=(9,49),LENGTH=10,ATTRB=(PROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(9,60),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(10,8),LENGTH=13,INITIAL='LOAN-AMOUNT :',ATTRB=ASKIP
+CLAMT   DFHMDF POS=(10,22),LENGTH=6,ATTRB=(PROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(10,32),LENGTH=1,ATTRB
