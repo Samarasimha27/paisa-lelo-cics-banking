@@ -1,0 +1,355 @@
+      ******************************************************************
+      * PROGRAM-ID  : PLRPT002
+      * SYSTEM      : PAISA LELO - LOAN MANAGEMENT SYSTEM
+      * FUNCTION    : DELINQUENCY / OVERDUE ACCOUNTS REPORT
+      *
+      * BUSINESS RULES (FROM DESIGN NOTES - DELINQUENCY):
+      *
+      *  D1. TENURE REDUCES 1 DAY
+      *  D2. NEXT DUE DATE = TODAY (AS INSTALLMENT DATE)
+      *  D3. NEXT INSTALLMENT = INSTALLMENT AMOUNT
+      *  D4. OVERDUE DAYS - IF STATUS 'O' CONVERT TO 'A'
+      *      (MEANING: CHECK WHETHER STATUS IS 'O', IF NOT NO CHANGE)
+      *  D5. CALCULATE OVERDUE DAYS:
+      *      IF INSTALLMENT PAID BEFORE GRACE PERIOD -> NOT DELINQUENT
+      *  D6. IF PARTIAL PAYMENT -> GRACE PERIOD DECREASES BY 1
+      *      IF PAYMENT IS PARTIAL PAYMENT GRACE PERIOD SHOULD BE
+      *      DECREASED. THE PAYMENT IS PARTIAL PAYMENT GRACE PERIOD
+      *      SHOULD BE DELINQUENT.
+      *
+      *  DELINQUENCY CLASSIFICATION:
+      *   DAYS-OVERD 1-30   -> SMA0
+      *   DAYS-OVERD 31-60  -> SMA1
+      *   DAYS-OVERD 61-90  -> SMA2
+      *   DAYS-OVERD > 90   -> NPA
+      *
+      *  PENALTY RULE:
+      *   GRACE PERIOD = 4 DAYS (FROM PARAMETER)
+      *   AFTER GRACE EXPIRES -> PENALTY 100 ADDED (FROM PARAMETER)
+      *   PENALTY CHECK FLAG PREVENTS DUPLICATE PENALTY PER CYCLE
+      *
+      *  SETTLEMENT CHECK:
+      *   AFTER PROCESSING OVERDUE -> CHECK SETTLEMENT ELIGIBILITY
+      *
+      * INPUT  : PLLOANFL (KSDS 136 BYTES), PLCUSTFL
+      * OUTPUT : PLRPT002 (SEQ 80 BYTES) - ALSO INPUT TO PLBATCH2
+      *          SORTED BY HIGHEST DAYS-OVERDUE (INTERNAL SORT)
+      ******************************************************************
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. PLRPT002.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+
+           SELECT LOAN-FILE
+               ASSIGN TO PLLOANFL
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS RANDOM
+               RECORD KEY IS L-LOAN-ACT-NO
+               FILE STATUS IS WS-LN-FS.
+
+           SELECT CUST-FILE
+               ASSIGN TO PLCUSTFL
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS RANDOM
+               RECORD KEY IS C-CUST-ID
+               FILE STATUS IS WS-CST-FS.
+
+           SELECT PARAM-FILE
+               ASSIGN TO CICSPRMF
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS RANDOM
+               RECORD KEY IS P-ID
+               FILE STATUS IS WS-PRM-FS.
+
+           SELECT REPORT-FILE
+               ASSIGN TO PLRPT002
+               ORGANIZATION IS SEQUENTIAL
+               FILE STATUS IS WS-RPT-FS.
+
+       DATA DIVISION.
+       FILE SECTION.
+
+      *================================================================
+      * LOAN MASTER - 136 BYTES VERIFIED LAYOUT
+      *================================================================
+       FD LOAN-FILE.
+       COPY LOANMST.
+
+       FD  CUST-FILE.
+       01  CUST-REC.
+           05 C-CUST-ID            PIC X(6).
+           05 C-CUST-NAME          PIC X(20).
+           05 C-AADHAR             PIC X(12).
+           05 C-PHONE              PIC X(10).
+           05 C-ADDRESS            PIC X(12).
+           05 C-IS-LOCAL           PIC X(1).
+           05 C-AGE                PIC 9(2).
+           05 C-LOANS              PIC 99.
+           05 C-RATING             PIC X(1).
+           05 FILLER               PIC X(14).
+
+      *================================================================
+      * PARAMETER FILE
+      *================================================================
+       FD  PARAM-FILE.
+       01 PARAM-REC.
+            05 P-ID          PIC X(4).
+            05 P-INTRATE     PIC 9(2).
+            05 P-MAX-LOANS   PIC 9(1).
+            05 P-MIN-LOAN    PIC 9(6).
+            05 P-MAX-L0AN    PIC 9(7).
+            05 P-MAX-TENURE  PIC 9(3).
+            05 P-MIN-TENURE  PIC 9(3).
+            05 P-MIN-AGE     PIC 9(2).
+            05 P-SURE-RATIO  PIC 9(3).
+            05 P-PENALTY-AMT PIC 9(3).
+            05 P-GRACE-PRD   PIC 9(3).
+            05 P-NON-LOCAL1  PIC X(10).
+            05 P-NON-LOCAL2  PIC X(10).
+            05 P-NON-LOCAL3  PIC X(10).
+            05 P-LOCAL       PIC X(10).
+            05 P-MAX-OVERDUE PIC 9(3).
+
+
+       FD  REPORT-FILE.
+       01  REPORT-REC.
+           05 RD-LOAN-ACCT     PIC X(6).
+           05 FILLER           PIC X(1).
+           05 RD-LOAN-AMT      PIC 9(6).
+           05 FILLER           PIC X(1).
+           05 RD-LAST-PAID     PIC X(10).
+           05 FILLER           PIC X(1).
+           05 RD-INST-AMT      PIC 9(6).
+           05 FILLER           PIC X(1).
+           05 RD-CURR-DATE     PIC X(10).
+           05 FILLER           PIC X(1).
+           05 RD-PENALTY       PIC 9(6).
+           05 FILLER           PIC X(1).
+           05 RD-NEXT-INST     PIC 9(6).
+           05 FILLER           PIC X(24).
+
+       WORKING-STORAGE SECTION.
+
+       01  WS-LN-FS                PIC XX.
+           88 LN-OK                VALUE '00'.
+           88 LN-EOF               VALUE '10'.
+       01  WS-CST-FS               PIC XX.
+           88 CST-OK               VALUE '00'.
+       01  WS-PRM-FS               PIC XX.
+           88 PRM-OK               VALUE '00'.
+       01  WS-RPT-FS               PIC XX.
+
+      *--- DATES (DDMMYYYY) ---
+       01  WS-TODAY-SYS            PIC 9(8).
+       01  WS-DATE-INT             PIC 9(9).
+       01  WS-TOMORROW             PIC 9(8).
+       01  WS-TODAY-DD             PIC 9(2).
+       01  WS-TODAY-MM             PIC 9(2).
+       01  WS-TODAY-YYYY           PIC 9(4).
+       01  WS-TODAY-DDMMYYYY       PIC 9(8).
+       01  WS-TMR-DDMMYYYY         PIC 9(8).
+       01  WS-TEMP                 PIC 9(8).
+       01  WS-DAYS                 PIC 9(3).
+       01  WS-AMT                  PIC 9(6).
+
+      *--- PARAMETER KEY ---
+       01  WS-PARAM-KEY            PIC X(4) VALUE 'PR01'.
+
+      *--- EOF FLAGS ---
+       01  EOF                     PIC X VALUE 'N'.
+       01  WS-EOF-LOAN             PIC X VALUE 'N'.
+           88 EOF-LOAN             VALUE 'Y'.
+       01  WS-EOF-SORT             PIC X VALUE 'N'.
+           88 EOF-SORT             VALUE 'Y'.
+
+       01  WS-TEMP-INST-AMT        PIC 9(6).
+
+      *--- REPORT TOTALS ---
+       01  WS-VRF-AMT              PIC 9(6)  VALUE ZEROS.
+       01  WS-OVD-COUNT            PIC 9(6)  VALUE ZEROS.
+       01  WS-TOTAL-OVD-AMT        PIC 9(9)  VALUE ZEROS.
+       01  WS-TOTAL-PENALTY        PIC 9(9)  VALUE ZEROS.
+       01  WS-NPA-COUNT            PIC 9(5)  VALUE ZEROS.
+       01  WS-SMA0-COUNT           PIC 9(5)  VALUE ZEROS.
+       01  WS-SMA1-COUNT           PIC 9(5)  VALUE ZEROS.
+       01  WS-SMA2-COUNT           PIC 9(5)  VALUE ZEROS.
+
+      *--- DELINQUENCY PROCESSING WORK ---
+       01  WS-NPA-CLASS            PIC X(4)  VALUE SPACES.
+       01  WS-PENALTY-ADD          PIC 9(6)  VALUE ZEROS.
+       01  WS-CUST-NAME            PIC X(20) VALUE SPACES.
+       01  WS-TENURE-WORK          PIC 9(3)  VALUE ZEROS.
+       01  WS-NEXT-INST-CALC       PIC 9(8)  VALUE ZEROS.
+
+
+       PROCEDURE DIVISION.
+
+      *================================================================
+       MAIN-LOGIC.
+      *================================================================
+           DISPLAY 'FINE'
+           PERFORM OPEN-FILES
+           PERFORM GET-TODAY-DATE
+           PERFORM READ-PARAMETERS
+           PERFORM READ-REPORT-FILE UNTIL EOF = 'Y'
+           PERFORM CLOSE-FILES
+           STOP RUN.
+
+      *================================================================
+       OPEN-FILES.
+      *================================================================
+           OPEN I-O   LOAN-FILE
+           OPEN INPUT CUST-FILE
+           OPEN INPUT PARAM-FILE
+           DISPLAY 'FINE'
+           OPEN INPUT REPORT-FILE.
+
+      *================================================================
+       GET-TODAY-DATE.
+      *================================================================
+           ACCEPT WS-TODAY-SYS FROM DATE YYYYMMDD
+           MOVE WS-TODAY-SYS(7:2)  TO WS-TODAY-DD
+           MOVE WS-TODAY-SYS(5:2)  TO WS-TODAY-MM
+           MOVE WS-TODAY-SYS(1:4)  TO WS-TODAY-YYYY
+           MOVE WS-TODAY-DD        TO WS-TODAY-DDMMYYYY(1:2)
+           MOVE WS-TODAY-MM        TO WS-TODAY-DDMMYYYY(3:2)
+           MOVE WS-TODAY-YYYY      TO WS-TODAY-DDMMYYYY(5:4).
+
+      *================================================================
+       READ-REPORT-FILE.
+      *================================================================
+
+           READ REPORT-FILE
+           AT END
+             MOVE 'Y' TO EOF
+           NOT END
+             PERFORM READ-LOANREC
+             PERFORM APPLY-COLLECTION-RULES
+             REWRITE WS-LOAN-RECORD
+             DISPLAY REPORT-REC
+             DISPLAY 'AFTER  ' DISPLAY WS-LOAN-RECORD
+           DISPLAY WS-RPT-FS.
+       READ-LOANREC.
+           MOVE RD-LOAN-ACCT TO L-LOAN-ACT-NO
+           READ LOAN-FILE
+            INVALID KEY
+             DISPLAY ' REC NOT FOUND'
+            NOT INVALID KEY
+            CONTINUE
+             DISPLAY 'BFORE  ' DISPLAY WS-LOAN-RECORD
+           END-READ.
+       READ-PARAMETERS.
+      *================================================================
+           MOVE WS-PARAM-KEY TO P-ID
+           READ PARAM-FILE
+            INVALID KEY
+             DISPLAY ' REC NOT FOUND'
+            NOT INVALID KEY
+            CONTINUE
+           END-READ
+           DISPLAY PARAM-REC.
+      *    IF NOT PRM-OK
+      *--- USE SAFE DEFAULTS IF PARAM NOT FOUND ---
+      *       MOVE 7   TO P-GRACE-PERIOD
+      *       MOVE 004 TO P-PENALTY-DAYS
+      *       MOVE 000100 TO P-PENALTY-AMT
+      *       MOVE 090 TO PR-NPA-DAYS
+      *       MOVE 03  TO PR-STLMNT-PEN-CNT
+      *       MOVE 060 TO PR-STLMNT-OVD-DAYS
+      *    END-IF.
+
+      * APPLY DELINQUENCY RULES TO EACH OVERDUE ACCOUNT
+      *================================================================
+       APPLY-COLLECTION-RULES.
+
+           IF L-TENURE > 0
+              SUBTRACT 1 FROM L-TENURE
+           END-IF
+
+           COMPUTE WS-VRF-AMT = L-NXT-INSTALLMNT - L-PAID-AMT
+             IF WS-VRF-AMT = ZERO
+               MOVE ZEROS TO L-NXT-INSTALLMNT
+               MOVE L-INSTALLMNT-AMT TO L-NXT-INSTALLMNT
+               ADD 1          TO WS-DAYS
+             END-IF
+             IF WS-VRF-AMT > ZERO  AND WS-VRF-AMT < L-INSTALLMNT-AMT
+               MOVE ZEROS TO L-NXT-INSTALLMNT
+               ADD WS-VRF-AMT TO L-NXT-INSTALLMNT
+               ADD 1          TO WS-DAYS
+             END-IF
+             IF WS-VRF-AMT < ZERO
+               MOVE ZEROS TO L-NXT-INSTALLMNT
+               ADD 1          TO WS-DAYS
+               COMPUTE L-NXT-INSTALLMNT = WS-VRF-AMT + L-INSTALLMNT-AMT
+               PERFORM APPLY-DELINQUENCY-RULES
+             END-IF
+             IF WS-VRF-AMT > ZERO  AND WS-VRF-AMT > L-INSTALLMNT-AMT
+               DIVIDE WS-VRF-AMT BY L-INSTALLMNT-AMT
+                   GIVING WS-DAYS
+                   REMAINDER WS-AMT
+               END-DIVIDE
+               ADD WS-AMT TO L-NXT-INSTALLMNT
+             END-IF
+           COMPUTE WS-DATE-INT =
+               FUNCTION INTEGER-OF-DATE(WS-TODAY-SYS)
+               ADD WS-DAYS TO WS-DATE-INT
+           COMPUTE WS-TOMORROW =
+               FUNCTION DATE-OF-INTEGER(WS-DATE-INT)
+           MOVE WS-TOMORROW TO WS-TEMP
+           MOVE WS-TEMP(7:2) TO WS-TMR-DDMMYYYY(1:2)
+           MOVE WS-TEMP(5:2) TO WS-TMR-DDMMYYYY(3:2)
+           MOVE WS-TEMP(1:4) TO WS-TMR-DDMMYYYY(5:4)
+
+
+           DISPLAY 'HELLO'
+           DISPLAY WS-TODAY-DDMMYYYY
+           DISPLAY WS-TMR-DDMMYYYY
+           IF L-STATUS = 'O'
+              MOVE 'A' TO L-STATUS
+           END-IF
+           IF L-DAYS-OVERD > ZERO
+              MOVE ZERO TO L-DAYS-OVERD
+           END-IF.
+      *--- PENALTY RULE: AFTER GRACE EXPIRES ADD PENALTY ---
+       APPLY-DELINQUENCY-RULES.
+           IF L-GRACE-PERIOD > 0
+              SUBTRACT 1 FROM L-GRACE-PERIOD
+           END-IF
+
+      *--- PENALTY RULE: AFTER GRACE EXPIRES ADD PENALTY ---
+           IF L-GRACE-PERIOD = 0
+           AND L-DAYS-OVERD > P-GRACE-PRD
+              ADD P-PENALTY-AMT TO L-PENALTY
+              ADD P-PENALTY-AMT TO L-OUTSTDG
+           END-IF
+           IF L-STATUS = 'A'
+              MOVE 'O' TO L-STATUS
+           END-IF
+           IF L-DAYS-OVERD > P-MAX-OVERDUE
+             MOVE 'Y' TO L-STLMNT-STS
+           END-IF.
+
+      *================================================================
+      *FETCH-CUST-NAME.
+      *================================================================
+      *    MOVE SK-CUST-ID TO C-CUST-ID
+      *    READ CUST-FILE INTO CUST-REC KEY IS C-CUST-ID
+      *    IF CST-OK
+      *       MOVE C-CUST-NAME TO WS-CUST-NAME
+      *    ELSE
+      *       MOVE 'UNKNOWN             ' TO WS-CUST-NAME
+      *    END-IF.
+
+      *================================================================
+     **REWRITE-INTO-FILE.
+     **      REWRITE LOAN-FILE.
+
+      *================================================================
+       CLOSE-FILES.
+      *================================================================
+           CLOSE LOAN-FILE
+                 CUST-FILE
+                 PARAM-FILE
+                 REPORT-FILE.
