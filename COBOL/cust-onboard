@@ -1,0 +1,981 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. MSTACRE2.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       COPY DFHAID.
+       COPY PAIMAP.
+       COPY PARAMFL.
+       COPY ADHAAR.
+       COPY CUSTFL.
+       COPY LOGINFL.
+       COPY PLREC.
+       COPY LOANMST.
+       01  WS-RESP       PIC S9(8) COMP.
+       01  WS-MSG        PIC X(30).
+       01  WS-ABSTIME       PIC S9(15) COMP-3.
+       01  WS-ABSTIME-NEXT  PIC S9(15) COMP-3.
+       01  WS-DATE          PIC X(10).
+       01  WS-l-DATE        PIC X(8).
+       01  WS-IDF        PIC X.
+       01  WS-SUREPRCNT  PIC 9(3).
+       01  WS-DAYS       PIC 9(3).
+       01  WS-FOUND      PIC X.
+       01  WS-LEN        PIC 9(2) VALUE 80.
+       01  INTEREST-AMT  PIC 9(5).
+       01  INTEREST-SAM  PIC 9(8).
+       01  INSTALMNT     PIC 9(3)V9(2).
+       01  WS-SUREPRVAL  PIC 9V99.
+       01  WS-PAR-ID     PIC X(4) VALUE 'PR01'.
+       01  WS-MASTER-REC.
+           05 M-ACCTNO          PIC X(10).
+           05 M-BANKNAME        PIC X(10).
+           05 M-PHONE           PIC X(10).
+           05 M-ADDRESS         PIC X(12).
+           05 M-BALANCE         PIC 9(9).
+           05 M-FILLER          PIC X(29).
+      *
+       01  WS-CUST-REC.
+           05 CB-ACCTNO          PIC X(10).
+           05 CB-BANKNAME        PIC X(10).
+           05 CB-PHONE           PIC X(10).
+           05 CB-ADDRESS         PIC X(12).
+           05 CB-BALANCE         PIC 9(9).
+           05 FILLER          PIC X(29).
+       01  WS-MASTER-ACCT       PIC X(10) VALUE 'MASTER0001'.
+       01  WS-CUST-ACCT         PIC X(10).
+       01  CUST-REC.
+           05 WS-CUSTID  PIC X(6).
+           05 WS-NAME    PIC X(20).
+           05 WS-ADHAAR  PIC X(12).
+           05 WS-PHONE   PIC X(10).
+           05 WS-ADDRESS PIC X(12).
+           05 WS-LOCALC  PIC X(1).
+           05 WS-AGE     PIC 9(2).
+           05 WS-LOANS   PIC 99.
+           05 WS-RATING  PIC X(1).
+           05 FILLER     PIC X(14).
+       01  S-CUST-REC.
+           05 S-CUSTID  PIC X(6).
+           05 S-NAME    PIC X(20).
+           05 S-ADHAAR  PIC X(12).
+           05 S-PHONE   PIC X(10).
+           05 S-ADDRESS PIC X(12).
+           05 S-LOCALC  PIC X(1).
+           05 S-AGE     PIC 9(2).
+           05 S-LOANS   PIC 99.
+           05 S-RATING  PIC X(1).
+           05 FILLER     PIC X(14).
+       01  WS-LOAN-REC.
+           05 WS-LOANACT        PIC X(6).
+           05 WS-CUSTIDL         PIC X(6).
+           05 WS-SCHEME         PIC X(1).
+           05 WS-LOANAMT        PIC 9(6).
+           05 WS-TENURE         PIC 9V9.
+           05 WS-INTEREST       PIC 9(2).
+           05 WS-BANKACCT       PIC X(10).
+           05 WS-INCOME         PIC 9(6).
+           05 WS-SURETYASSET    PIC X(10).
+           05 WS-SURETYVAL      PIC 9(6).
+           05 WS-LOCAL          PIC X(1).
+           05 WS-SURETYACCT     PIC X(10).
+           05 WS-OUTSTDG        PIC 9(6).
+           05 WS-PAIDTODATE     PIC 9(6).
+           05 WS-NEXTDUEDT      PIC 9(6).
+           05 WS-DAYSOVERD      PIC 9(3).
+           05 WS-PENALTY        PIC S9(6)V99.
+           05 WS-STATUS         PIC X(1).
+           05 WS-OPENDATE       PIC 9(6).
+           05 WS-CLOSEDATE      PIC 9(6).
+           05 WS-CLOSERMKS      PIC X(30).
+       01  WS-LOAN-CTR.
+           05 WS-KEY      PIC X(6).
+           05 WS-LAST-ID.
+              10 ALPHA    PIC X(2).
+              10 NUMBERS  PIC 9(4).
+       01  WS-COMMAREA.
+           05 WS-LOGIN    PIC X(6).
+           05 WS-SCREEN   PIC X(1).
+       01  WS-LOCAL-FLAG        PIC X.
+           88 LOCAL             VALUE 'Y'.
+           88 NON-LOCAL         VALUE 'N'.
+
+       LINKAGE SECTION.
+       01 DFHCOMMAREA.
+           05 LOGIN    PIC X(6).
+           05 SCREEN   PIC X(1).
+
+       PROCEDURE DIVISION.
+
+       MAIN-LOGIC.
+
+           IF EIBCALEN = 0
+              MOVE LOW-VALUES TO PACTOBMO
+              PERFORM SEND-ONBORDING
+              PERFORM RETURN-CICS
+           ELSE
+              MOVE DFHCOMMAREA TO WS-COMMAREA
+              IF WS-SCREEN = 'I'
+                 MOVE LOW-VALUES TO PACTOBMO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+              else
+                 PERFORM KEY-CHECK
+           END-IF.
+
+       KEY-CHECK.
+           EVALUATE EIBAID
+
+      *================ ENTER KEY =================
+           WHEN DFHENTER
+                PERFORM RECEIVE-SCREEN
+                  MOVE ABEXCUSI TO WS-IDF
+                       EXEC CICS SEND TEXT
+                           FROM(WS-IDF)
+                           LENGTH(LENGTH OF WS-IDF)
+                           ERASE
+                           END-EXEC
+                  PERFORM RETRIEVE-PARAMETERS
+                  PERFORM RETRIEVE-LOANINFO
+                    IF WS-IDF = 'N'
+                       PERFORM RETRIEVE-DEMO
+                       PERFORM NEW-CUST-CHECK
+
+
+                     PERFORM SEND-ONBORDING
+                     PERFORM RETURN-CICS
+                     ELSE
+                        INITIALIZE CUST-REC
+                         MOVE ABCUSTI TO WS-CUSTID
+                       EXEC CICS SEND TEXT
+                           FROM(WS-CUSTID)
+                           LENGTH(LENGTH OF WS-CUSTID)
+                           ERASE
+                           END-EXEC
+                       EXEC CICS READ
+                          DATASET('PLCUSTDT')
+                          INTO(WS-CUSTOMER-RECORD)
+                          RIDFLD(WS-CUSTID)
+                          RESP(WS-RESP)
+                       END-EXEC
+                       EVALUATE WS-RESP
+
+                       WHEN DFHRESP(NORMAL)
+                       MOVE 'CUSTEMOR FOUND' TO WS-MSG
+                       EXEC CICS SEND TEXT
+                           FROM(WS-MSG)
+                           LENGTH(LENGTH OF WS-MSG)
+                           ERASE
+                           END-EXEC
+                       EXEC CICS SEND TEXT
+                           FROM(C-LOANS)
+                           LENGTH(LENGTH OF C-LOANS)
+                           ERASE
+                           END-EXEC
+                       IF C-LOANS < 2
+                         MOVE WS-LOCALC TO WS-LOCAL
+                         PERFORM SURITY-CHECK
+                       ELSE
+                         MOVE 'YOU HAVE EXCEDED YOUR LOANS LIMIT'
+                          TO MSGO
+                       END-IF
+                        PERFORM SEND-ONBORDING
+                        PERFORM RETURN-CICS
+                    WHEN DFHRESP(NOTFND)
+                         MOVE 'NO ID FOUND' TO MSGO
+                        PERFORM SEND-ONBORDING
+                        PERFORM RETURN-CICS
+
+                    WHEN DFHRESP(NOTOPEN)
+                         MOVE 'FILE NOT OPEN' TO MSGO
+                        PERFORM SEND-ONBORDING
+                        PERFORM RETURN-CICS
+
+                    WHEN OTHER
+                         MOVE 'UNKNOWN ISSUE' TO MSGO
+                        PERFORM SEND-ONBORDING
+                        PERFORM RETURN-CICS
+
+                    END-EVALUATE
+      *                   FORM EXISTING-PARA
+                    END-IF
+      *================ PF3 KEY =================
+           WHEN DFHPF3
+                 MOVE 'I' TO WS-SCREEN
+                 EXEC CICS XCTL PROGRAM('PACTMOD')
+                      COMMAREA(WS-COMMAREA)
+                      LENGTH(7)
+                 END-EXEC
+           WHEN DFHPF12
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+           WHEN DFHPF5
+                 PERFORM DISPLAY-RECEIPT
+                 PERFORM RETURN-CICS
+      *            EXEC CICS XCTL
+      *               PROGRAM('IBNKLOG')
+      *            END-EXEC
+           WHEN OTHER
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+           END-EVALUATE.
+      *=================  NEW-CUST-CHECK    =========================
+       NEW-CUST-CHECK.
+      *    START BROWSE
+            MOVE LOW-VALUES TO WS-CUSTID
+            EXEC CICS STARTBR
+                FILE('PLCUSTDT')
+                RIDFLD(S-CUSTID)
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'FILE NOT OPENED' TO WS-MSG
+                  EXEC CICS SEND TEXT
+                       FROM(WS-MSG)
+                       LENGTH(LENGTH OF WS-MSG)
+                       ERASE
+                  END-EXEC
+
+           END-IF
+
+      * READ LOOP
+           PERFORM UNTIL WS-RESP NOT = DFHRESP(NORMAL)
+                          OR WS-FOUND = 'Y'
+
+              EXEC CICS READNEXT
+                   FILE('PLCUSTDT')
+                   INTO(S-CUST-REC)
+                   RIDFLD(S-CUSTID)
+                   RESP(WS-RESP)
+              END-EXEC
+
+              IF WS-RESP = DFHRESP(NORMAL)
+
+
+      * Check condition
+                 IF WS-ADHAAR = S-ADHAAR
+                    MOVE 'Y' TO WS-FOUND
+                  ELSE
+                    MOVE 'N' TO WS-FOUND
+                 END-IF
+
+              END-IF
+
+           END-PERFORM
+
+
+      * END BROWSE
+           EXEC CICS ENDBR
+                FILE('PLCUSTDT')
+           END-EXEC
+           IF WS-FOUND = 'N'
+             PERFORM ONBOARDING-PARA
+           ELSE
+             MOVE 'ADHAAR FOUND DUPLICATE' TO WS-MSG
+                  EXEC CICS SEND TEXT
+                       FROM(WS-MSG)
+                       LENGTH(LENGTH OF WS-MSG)
+                       ERASE
+                  END-EXEC
+            END-IF.
+      *=================  ADHAAR VALIDATION =========================
+       ADHAR-VALIDATION.
+            EXEC CICS READ
+                 DATASET('CICSADHR')
+                 INTO(ADHAAR-REC)
+                 RIDFLD(WS-ADHAAR)
+                 RESP(WS-RESP)
+            END-EXEC
+            EVALUATE WS-RESP
+
+             WHEN DFHRESP(NORMAL)
+                  MOVE 'ADHAAR FOUND' TO WS-MSG
+                  EXEC CICS SEND TEXT
+                       FROM(WS-MSG)
+                       LENGTH(LENGTH OF WS-MSG)
+                       ERASE
+                  END-EXEC
+                  PERFORM PHONE-CHECK
+             WHEN DFHRESP(NOTFND)
+                  MOVE 'ADHAAR NOT FOUND' TO MSGO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+
+             WHEN DFHRESP(DUPREC)
+                  MOVE 'DUPLICATE CUSTOMER ACCOUNT' TO MSGO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+
+             WHEN DFHRESP(NOTOPEN)
+                  MOVE 'FILE NOT OPEN' TO MSGO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+
+             WHEN OTHER
+                  MOVE 'UNKNOWN ISSUE' TO MSGO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+
+             END-EVALUATE.
+
+      ********************** ADDRESS CHECK ********************
+
+       ADDRESS-CHECK.
+
+            IF WS-ADDRESS = A-ADDRESS
+               IF LOCAL
+                  IF WS-ADDRESS = P-LOCAL
+                    PERFORM AGE-CHECK
+                  ELSE
+                    MOVE 'ADDRESS NOT VALID LOCAL' TO MSGO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+                  END-IF
+               ELSE
+                  IF WS-ADDRESS = P-NON-LOCAL1
+                       OR WS-ADDRESS = P-NON-LOCAL3
+                       OR WS-ADDRESS = P-NON-LOCAL2
+                    PERFORM AGE-CHECK
+                   ELSE
+
+                    MOVE 'ADDRESS NOT IN NON-LOCAL LIST' TO WS-MSG
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+                  END-IF
+               END-IF.
+       PHONE-CHECK.
+
+            IF WS-PHONE = A-PHONE
+                   MOVE 'VALID PHONE NUMBER' TO WS-MSG
+                   EXEC CICS SEND TEXT
+                       FROM(WS-MSG)
+                       LENGTH(LENGTH OF WS-MSG)
+                       ERASE
+                  END-EXEC
+               PERFORM ADDRESS-CHECK
+            ELSE
+                 MOVE 'INVALID PHONE NUMBER' TO MSGO
+            END-IF.
+      *********************** AGE CHECK ***********************
+       AGE-CHECK.
+            IF WS-AGE >= P-MIN-AGE
+
+               PERFORM SURITY-CHECK
+            ELSE
+               MOVE 'AGE IS NOT VALID ' TO MSGO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+            END-IF.
+
+      ************************* SURITY CHECK **********************
+       SURITY-CHECK.
+           IF WS-LOANAMT NOT = 0
+               COMPUTE WS-SUREPRVAL = (WS-SURETYVAL / WS-LOANAMT)
+               COMPUTE WS-SUREPRCNT = WS-SUREPRVAL * 100
+           ELSE
+               MOVE 0 TO WS-SUREPRCNT
+           END-IF
+                   EXEC CICS SEND TEXT
+                       FROM(WS-SUREPRCNT)
+                       LENGTH(LENGTH OF WS-SUREPRCNT)
+                       ERASE
+                  END-EXEC
+
+           IF WS-SUREPRCNT >= P-SURE-RATIO
+               IF WS-LOCAL = 'Y'
+                   MOVE 'VALID SURITY' TO WS-MSG
+                   EXEC CICS SEND TEXT
+                       FROM(WS-MSG)
+                       LENGTH(LENGTH OF WS-MSG)
+                       ERASE
+                  END-EXEC
+                  IF WS-IDF = 'N'
+                   PERFORM CUST-ID-GEN
+                   PERFORM LOG-CREDENTIALS-GEN
+                   PERFORM LOAN-ID-GEN
+                   PERFORM LOAN-CALCULATION
+                   PERFORM DISBURSE-LOAN
+                 ELSE
+                   PERFORM LOAN-ID-GEN
+                   PERFORM LOAN-CALCULATION
+                   PERFORM DISBURSE-LOAN
+                 END-IF
+               ELSE
+                   PERFORM SURITY-CUSTOMER-CHECK
+               END-IF
+           ELSE
+               MOVE 'SURETY NOT APPLICABLE' TO MSGO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+           END-IF.
+
+      *********************** EXISTING CUSTOMER CHECK ************
+
+       SURITY-CUSTOMER-CHECK.
+
+            EXEC CICS READ
+                 DATASET('PLCUSTDT')
+                 INTO(S-CUST-REC)
+                 RIDFLD(WS-SURETYACCT)
+                 RESP(WS-RESP)
+            END-EXEC
+            EVALUATE WS-RESP
+
+             WHEN DFHRESP(NORMAL)
+                  MOVE 'CUSTEMOR FOUND' TO WS-MSG
+                  EXEC CICS SEND TEXT
+                       FROM(WS-MSG)
+                       LENGTH(LENGTH OF WS-MSG)
+                       ERASE
+                  END-EXEC
+                IF WS-IDF = 'N'
+                  PERFORM CUST-ID-GEN
+                  PERFORM LOG-CREDENTIALS-GEN
+                  PERFORM LOAN-ID-GEN
+                  PERFORM LOAN-CALCULATION
+                  PERFORM DISBURSE-LOAN
+                ELSE
+                  PERFORM LOAN-ID-GEN
+                  PERFORM LOAN-CALCULATION
+                  PERFORM DISBURSE-LOAN
+                END-IF
+             WHEN DFHRESP(NOTFND)
+                  MOVE 'NOT ELIGIBLE ID FOUND' TO MSGO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+
+             WHEN DFHRESP(NOTOPEN)
+                  MOVE 'FILE NOT OPEN' TO MSGO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+
+             WHEN OTHER
+                  MOVE 'UNKNOWN ISSUE' TO MSGO
+                 PERFORM SEND-ONBORDING
+                 PERFORM RETURN-CICS
+
+             END-EVALUATE.
+
+      ************** LOAN ID GENERATION **************
+       CUST-ID-GEN.
+            MOVE '000002' TO WS-KEY
+            EXEC CICS READ
+                 DATASET('PLTXNCNT')
+                 INTO(WS-LOAN-CTR)
+                 RIDFLD(WS-KEY)
+                 RESP(WS-RESP)
+                 UPDATE
+            END-EXEC
+            EVALUATE WS-RESP
+                WHEN DFHRESP(NORMAL)
+                     ADD 1 TO NUMBERS
+                     MOVE WS-LAST-ID TO C-CUST-ID
+                     EXEC CICS REWRITE
+                          FILE('PLTXNCNT')
+                          FROM(WS-LOAN-CTR)
+                          RESP(WS-RESP)
+                     END-EXEC
+             EXEC CICS SEND TEXT
+                 FROM(C-CUST-ID)
+                 LENGTH(LENGTH OF C-CUST-ID)
+                 ERASE
+            END-EXEC
+             WHEN DFHRESP(NOTOPEN)
+                          MOVE 'LOAN CTR FILE NOT OPEN' TO MSGO
+                          PERFORM SEND-ONBORDING
+                          PERFORM RETURN-CICS
+                     WHEN DFHRESP(NOTFND)
+                          MOVE 'LOAN CTR REC NOT FOUND' TO MSGO
+                          PERFORM SEND-ONBORDING
+                          PERFORM RETURN-CICS
+                     WHEN OTHER
+                          MOVE 'LOAN CTR UNKNOWN ERROR' TO MSGO
+                          PERFORM SEND-ONBORDING
+                          PERFORM RETURN-CICS
+                 END-EVALUATE.
+       LOAN-ID-GEN.
+            MOVE '000001' TO WS-KEY
+            EXEC CICS READ
+                 DATASET('PLTXNCNT')
+                 INTO(WS-LOAN-CTR)
+                 RIDFLD(WS-KEY)
+                 RESP(WS-RESP)
+                 UPDATE
+            END-EXEC
+            EVALUATE WS-RESP
+                WHEN DFHRESP(NORMAL)
+                     ADD 1 TO NUMBERS
+                     MOVE WS-LAST-ID TO L-LOAN-ACT-NO
+                     EXEC CICS REWRITE
+                          FILE('PLTXNCNT')
+                          FROM(WS-LOAN-CTR)
+                          RESP(WS-RESP)
+                     END-EXEC
+             EXEC CICS SEND TEXT
+                 FROM(WS-LOAN-CTR)
+                 LENGTH(LENGTH OF WS-LOAN-CTR)
+                 ERASE
+            END-EXEC
+             WHEN DFHRESP(NOTOPEN)
+                          MOVE 'LOAN CTR FILE NOT OPEN' TO MSGO
+                          PERFORM SEND-ONBORDING
+                          PERFORM RETURN-CICS
+                     WHEN DFHRESP(NOTFND)
+                          MOVE 'LOAN CTR REC NOT FOUND' TO MSGO
+                          PERFORM SEND-ONBORDING
+                          PERFORM RETURN-CICS
+                     WHEN OTHER
+                          MOVE 'LOAN CTR UNKNOWN ERROR' TO MSGO
+                          PERFORM SEND-ONBORDING
+                          PERFORM RETURN-CICS
+                 END-EVALUATE.
+      ************** LOAN CALCULATION ****************
+
+       LOAN-CALCULATION.
+             COMPUTE INTEREST-SAM = WS-LOANAMT * WS-TENURE
+                                    * P-INTRATE
+             COMPUTE INTEREST-AMT = INTEREST-SAM / 100
+             COMPUTE L-OUTSTDG    = INTEREST-AMT + WS-LOANAMT
+             EXEC CICS SEND TEXT
+                 FROM(L-OUTSTDG)
+                 LENGTH(LENGTH OF L-OUTSTDG)
+                 ERASE
+            END-EXEC
+             COMPUTE WS-DAYS      = WS-TENURE * 365
+      ************** EMI CALCULATION *******************
+             COMPUTE L-INSTALLMNT-AMT = L-OUTSTDG / WS-DAYS
+             EXEC CICS SEND TEXT
+                 FROM(L-INSTALLMNT-AMT)
+                 LENGTH(LENGTH OF L-INSTALLMNT-AMT)
+                 ERASE
+            END-EXEC
+
+             COMPUTE L-FIRST-INST =
+                L-OUTSTDG - (L-INSTALLMNT-AMT * (WS-DAYS - 1))
+      *      EXEC CICS SEND TEXT
+      *          FROM(L-FIRST-INST)
+      *          LENGTH(LENGTH OF L-FIRST-INST)
+      *          ERASE
+      *     END-EXEC
+               MOVE L-FIRST-INST TO L-NXT-INSTALLMNT
+      *****************  DUE DATE CALCULATION*********************
+             EXEC CICS ASKTIME
+                  ABSTIME(WS-ABSTIME)
+             END-EXEC
+
+                   COMPUTE WS-ABSTIME-NEXT =
+                           WS-ABSTIME + 86400000
+             EXEC CICS SEND TEXT
+                 FROM(WS-ABSTIME-NEXT)
+                 LENGTH(LENGTH OF WS-ABSTIME-NEXT)
+                 ERASE
+            END-EXEC
+
+                   EXEC CICS FORMATTIME
+                        ABSTIME(WS-ABSTIME-NEXT)
+                        DDMMYYYY(L-NEXT-DUE-DT)
+                   END-EXEC
+
+             IF WS-IDF = 'N'
+                ADD 1 TO C-LOANS
+                PERFORM ADD-INTO-CUSTFL
+                PERFORM ADD-INTO-LOANFL
+             ELSE
+                       EXEC CICS READ
+                          DATASET('PLCUSTDT')
+                          INTO(WS-CUSTOMER-RECORD)
+                          RIDFLD(WS-CUSTID)
+                          RESP(WS-RESP)
+                          UPDATE
+                       END-EXEC
+                   ADD 1 TO C-LOANS
+                      EXEC CICS REWRITE
+                        DATASET('PLCUSTDT')
+                        FROM(WS-CUSTOMER-RECORD)
+                      END-EXEC
+             EXEC CICS SEND TEXT
+                 FROM(WS-CUSTOMER-RECORD)
+                 LENGTH(LENGTH OF WS-CUSTOMER-RECORD)
+                 ERASE
+            END-EXEC
+                      PERFORM ADD-INTO-LOANFL
+              END-IF.
+      ***************************  ONBOARDING *********************
+
+       ONBOARDING-PARA.
+            MOVE   0      TO WS-LOANS
+            MOVE   0      TO WS-RATING
+            IF WS-LOCAL = 'Y'
+               SET LOCAL TO TRUE
+            ELSE
+               SET NON-LOCAL TO TRUE
+            END-IF
+            PERFORM ADHAR-VALIDATION.
+       LOG-CREDENTIALS-GEN.
+            MOVE A-DOB(3:4) TO WS-PASSWORD
+            MOVE 'C'        TO USERTYPE
+            MOVE C-CUST-ID  TO USRID
+            EXEC CICS WRITE
+                 FILE('LOGF')
+                 FROM(LOGIN-REC)
+                 RIDFLD(USRID)
+                 RESP(WS-RESP)
+            END-EXEC
+            EVALUATE WS-RESP
+
+             WHEN DFHRESP(NORMAL)
+                  MOVE 'CUSTOMER CREATED SUCCESSFULLY' TO WS-MSG
+            EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+            EXEC CICS SEND TEXT
+                 FROM(WS-PASSWORD)
+                 LENGTH(LENGTH OF WS-PASSWORD)
+                 ERASE
+            END-EXEC
+
+             WHEN DFHRESP(DUPREC)
+                  MOVE 'DUPLICATE CUSTOMER ACCOUNT' TO WS-MSG
+            EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+
+             WHEN DFHRESP(NOTOPEN)
+                  MOVE 'FILE NOT OPEN' TO WS-MSG
+            EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+
+             WHEN OTHER
+                  MOVE 'UNKNOWN ISSUE' TO WS-MSG
+            EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC.
+
+      ***************************  RETRIEVE DEMO *******************
+       RETRIEVE-DEMO.
+            MOVE ABNAMEI   TO WS-NAME
+            MOVE ABLOCALI  TO WS-LOCAL
+            MOVE ABAGEI    TO WS-AGE
+            MOVE ABADHRI   TO WS-ADHAAR
+            MOVE ABPHNOI   TO WS-PHONE
+            MOVE ABADDRI   TO WS-ADDRESS.
+       ADD-INTO-CUSTFL.
+            INITIALIZE CUST-REC
+            PERFORM RETRIEVE-DEMO
+            MOVE WS-NAME    TO C-CUST-NAME
+            MOVE WS-LOCAL   TO C-IS-LOCAL
+            MOVE WS-AGE     TO C-AGE
+            MOVE WS-PHONE   TO C-PHONE
+            MOVE WS-ADHAAR  TO C-AADHAR
+            MOVE WS-ADDRESS TO C-ADDRESS
+            MOVE WS-PHONE   TO C-PHONE
+            MOVE ZEROS      TO C-RATING
+            EXEC CICS SEND TEXT
+                 FROM(C-CUST-ID)
+                 LENGTH(LENGTH OF C-CUST-ID)
+                 ERASE
+            END-EXEC
+
+            EXEC CICS WRITE
+                 FILE('PLCUSTDT')
+                 FROM(WS-CUSTOMER-RECORD)
+                 RIDFLD(C-CUST-ID)
+                 RESP(WS-RESP)
+            END-EXEC
+            EVALUATE WS-RESP
+
+             WHEN DFHRESP(NORMAL)
+                  MOVE 'CUSTOMER CREATED SUCCESSFULLY' TO WS-MSG
+            EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+
+             WHEN DFHRESP(DUPREC)
+                  MOVE 'DUPLICATE CUSTOMER ACCOUNT' TO WS-MSG
+            EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+
+             WHEN DFHRESP(NOTOPEN)
+                  MOVE 'FILE NOT OPEN' TO WS-MSG
+            EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+
+             WHEN OTHER
+                  MOVE 'UNKNOWN ISSUE' TO WS-MSG
+            EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+
+             END-EVALUATE
+            EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC.
+       DISBURSE-LOAN.
+
+      *-----------------------------------
+      * GET CUSTOMER BANK ACCOUNT
+      *-----------------------------------
+            MOVE WS-BANKACCT TO WS-CUST-ACCT
+            EXEC CICS SEND TEXT
+                 FROM(WS-CUST-ACCT)
+                 LENGTH(LENGTH OF WS-CUST-ACCT)
+                 ERASE
+            END-EXEC.
+
+      *-----------------------------------
+      * READ MASTER ACCOUNT
+      *-----------------------------------
+            EXEC CICS READ
+               DATASET('PLBANKFL')
+                 INTO(WS-MASTER-REC)
+                RIDFLD(WS-MASTER-ACCT)
+                UPDATE
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'MASTER READ ERROR' TO WS-MSG
+              EXEC CICS UNLOCK FILE('PLBANKFL') END-EXEC
+           EXEC CICS SEND TEXT
+                FROM(WS-MSG)
+                LENGTH(LENGTH OF WS-MSG)
+                ERASE
+           END-EXEC
+           END-IF
+
+
+      *----------------------------------
+      * CHECK MASTER BALANCE
+      *-----------------------------------
+           IF M-BALANCE < WS-LOANAMT
+              MOVE 'INSUFFICIENT MASTER BALANCE' TO WS-MSG
+              EXEC CICS UNLOCK FILE('PLBANKFL') END-EXEC
+           EXEC CICS SEND TEXT
+                FROM(WS-MSG)
+                LENGTH(LENGTH OF WS-MSG)
+                ERASE
+           END-EXEC
+              PERFORM SEND-ONBORDING
+              PERFORM RETURN-CICS
+           END-IF
+
+      *-----------------------------------
+      * DEBIT MASTER
+      *-----------------------------------
+           SUBTRACT WS-LOANAMT FROM M-BALANCE
+
+           EXEC CICS REWRITE
+                DATASET('PLBANKFL')
+                FROM(WS-MASTER-REC)
+           END-EXEC
+      *-----------------------------------
+      * READ CUSTOMER ACCOUNT
+      *-----------------------------------
+           EXEC CICS READ
+                DATASET('PLBANKFL')
+                INTO(WS-CUST-REC)
+                RIDFLD(WS-CUST-ACCT)
+                UPDATE
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'CUST READ ERROR' TO WS-MSG
+              EXEC CICS UNLOCK FILE('PLBANKFL') END-EXEC
+           EXEC CICS SEND TEXT
+                FROM(WS-MSG)
+                LENGTH(LENGTH OF WS-MSG)
+                ERASE
+           END-EXEC
+           END-IF
+
+      *-----------------------------------
+      * CREDIT CUSTOMER
+      *-----------------------------------
+           ADD WS-LOANAMT TO CB-BALANCE
+           EXEC CICS REWRITE
+                DATASET('PLBANKFL')
+                FROM(WS-CUST-REC)
+           END-EXEC
+           MOVE 'LOAN DISBURSED SUCCESSFULLY ENTER PF5 FOR RECIEPT'
+                                    TO MSGO
+           EXEC CICS SEND
+                FROM(WS-MSG)
+                LENGTH(LENGTH OF WS-MSG)
+                ERASE
+           END-EXEC.
+       RETRIEVE-LOANINFO.
+                 MOVE ABSCHEMI       TO WS-SCHEME
+                 MOVE ABAMTI         TO WS-LOANAMT
+                 MOVE ABTENURI       TO WS-TENURE
+                 MOVE ABKACI         TO WS-BANKACCT
+                 MOVE ABINCOI        TO WS-INCOME
+                 MOVE ABSUREI        TO WS-SURETYASSET
+                 MOVE ABSURVI        TO WS-SURETYVAL
+                 MOVE ABSUANI        TO WS-SURETYACCT
+                 MOVE ABAMTI         TO WS-OUTSTDG.
+       ADD-INTO-LOANFL.
+             EXEC CICS SEND TEXT
+                 FROM(L-LOAN-ACT-NO)
+                 LENGTH(LENGTH OF L-LOAN-ACT-NO)
+                 ERASE
+            END-EXEC
+            MOVE C-CUST-ID      TO L-CUST-ID
+            MOVE WS-SCHEME      TO L-SCHEME
+            MOVE WS-LOANAMT     TO L-LOAN-AMT
+            MOVE WS-DAYS        TO L-TENURE
+            MOVE P-INTRATE      TO L-INTEREST
+            MOVE WS-BANKACCT    TO L-BANK-ACCT
+            MOVE WS-INCOME      TO L-INCOME
+            MOVE WS-SURETYASSET TO L-SURETY-ASSET
+            MOVE WS-SURETYVAL   TO L-SURETY-VAL
+            MOVE WS-SURETYACCT  TO L-SURETY-ACCT
+            MOVE ZEROS          TO L-PAID-TO-DATE
+            MOVE ZEROS          TO L-DAYS-OVERD
+            MOVE P-PENALTY-AMT  TO L-PENALTY
+            MOVE 'A'            TO L-STATUS
+            MOVE 'N'            TO L-STLMNT-STS
+            MOVE WS-DATE        TO L-OPEN-DATE
+            MOVE ZEROS          TO L-CLOSE-DATE
+            EXEC CICS WRITE
+                 DATASET('PLLOANFL')
+                 FROM(WS-LOAN-RECORD)
+                 RIDFLD(L-LOAN-ACT-NO)
+                 RESP(WS-RESP)
+            END-EXEC
+            EVALUATE WS-RESP
+
+             WHEN DFHRESP(NORMAL)
+                  MOVE 'LOAN CREATED SUCCESSFULLY' TO WS-MSG
+             EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+
+             WHEN DFHRESP(DUPREC)
+                  MOVE 'ERROR: DUPLICATE LOAN ACCOUNT' TO WS-MSG
+             EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+
+             WHEN DFHRESP(NOTOPEN)
+                  MOVE 'ERROR: FILE NOT OPEN' TO WS-MSG
+             EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+
+             WHEN OTHER
+                  MOVE 'ERROR: UNKNOWN ISSUE' TO WS-MSG
+             EXEC CICS SEND TEXT
+                 FROM(WS-MSG)
+                 LENGTH(LENGTH OF WS-MSG)
+                 ERASE
+            END-EXEC
+
+            END-EVALUATE.
+       DISPLAY-RECEIPT.
+            MOVE C-CUST-ID        TO RCSTIDO
+           IF WS-IDF = 'N'
+            MOVE WS-PASSWORD      TO RPWO
+           ELSE
+            MOVE 'XXXX' TO RPWO
+           END-IF
+            MOVE WS-LOANAMT       TO RLNAMTO
+            MOVE C-CUST-NAME      TO RNAMEO
+            MOVE C-PHONE         TO RPHNOO
+            MOVE L-LOAN-ACT-NO    TO RLNIDO
+            MOVE WS-DATE          TO RISUDTO
+            MOVE WS-DATE          TO LRDATEO
+            MOVE L-NEXT-DUE-DT    TO RDUEDTO
+            MOVE L-FIRST-INST     TO RINAMTO
+            MOVE L-INSTALLMNT-AMT TO RFINAMTO
+            MOVE WS-DAYS          TO RTENURO
+            PERFORM SEND-RECEIPT
+            PERFORM RETURN-CICS.
+       RETRIEVE-PARAMETERS.
+             EXEC CICS READ
+                  DATASET('CICSPRMF')
+                  INTO(PARAM-REC)
+                  RIDFLD(WS-PAR-ID)
+                  RESP(WS-RESP)
+             END-EXEC.
+      *================ RECEIPT SCREEN =================
+       SEND-RECEIPT.
+           EXEC CICS ASKTIME
+                ABSTIME(WS-ABSTIME)
+           END-EXEC
+           EXEC CICS FORMATTIME
+                ABSTIME(WS-ABSTIME)
+                DDMMYYYY(WS-l-DATE)
+                DATESEP()
+           END-EXEC
+           EXEC CICS FORMATTIME
+                ABSTIME(WS-ABSTIME)
+                DDMMYYYY(WS-DATE)
+                DATESEP('/')
+           END-EXEC
+           MOVE WS-DATE TO LRDATEO
+
+           EXEC CICS SEND MAP('PLLR')
+                MAPSET('PLREC')
+                ERASE
+                FREEKB
+           END-EXEC.
+      *================ WELCOME SCREEN =================
+       SEND-ONBORDING.
+           EXEC CICS ASKTIME
+                ABSTIME(WS-ABSTIME)
+           END-EXEC
+           EXEC CICS FORMATTIME
+                ABSTIME(WS-ABSTIME)
+                DDMMYYYY(WS-DATE)
+                DATESEP('/')
+           END-EXEC
+           MOVE WS-DATE TO ABDATEO
+
+           EXEC CICS SEND MAP('PACTOBM')
+                MAPSET('PAIMAP')
+                ERASE
+                FREEKB
+           END-EXEC.
+      *================ RECEIVE WELCOME =================
+       RECEIVE-SCREEN.
+           EXEC CICS RECEIVE MAP('PACTOBM')
+                MAPSET('PAIMAP')
+           END-EXEC.
+
+      *================ RETURN =================
+       RETURN-CICS.
+           MOVE 'R' TO WS-SCREEN
+           EXEC CICS RETURN
+                TRANSID('PL03')
+                COMMAREA(WS-COMMAREA)
+                LENGTH(7)
+           END-EXEC.
