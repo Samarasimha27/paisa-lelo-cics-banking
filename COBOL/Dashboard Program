@@ -1,0 +1,207 @@
+      ************************************************************
+      * PROGRAM   : DASHPROG                                           *
+      * PURPOSE   : READ KSDS REPORT FILE AND DISPLAY DASHBOARD MAP   *
+      * MAP       : DASHBD / DSHBD                                     *
+      ******************************************************************
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. DASHPROG.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       COPY DFHAID.
+       COPY DASHBD.
+
+      *----------------------------------------------------------------*
+      * KSDS REPORT FILE RECORD                                        *
+      *----------------------------------------------------------------*
+       01 OUT-REC.
+          05 KSDS-KEY              PIC X(10).
+          05 TOTAL-COLLECTED       PIC 9(9).
+          05 NO-OF-ACCOUNTS        PIC 9(6).
+          05 CASH-INFLOW           PIC 9(9).
+          05 BANK-TRANSFER         PIC 9(9).
+          05 ACTIVE-ACCOUNTS       PIC 9(6).
+          05 TOTAL-OUTSTANDING     PIC 9(9).
+          05 OVERDUE-ACCOUNTS      PIC 9(6).
+          05 TOTAL-OVERDUE-AMT     PIC 9(9).
+          05 PENALTY-LEVIED        PIC 9(9).
+          05 ACCOUNTS-OPENED       PIC 9(6).
+          05 AMOUNT-DISBURSED      PIC 9(9).
+
+      *----------------------------------------------------------------*
+      * WORKING VARIABLES                                              *
+      *----------------------------------------------------------------*
+       01 WS-RESP                  PIC S9(8) COMP.
+       01 WS-DATE                  PIC X(10).
+       01 WS-ABSTIME               PIC X(10).
+       01 WS-KSDS-KEY              PIC X(10) VALUE 'DASHBOARDK'.
+
+      *----------------------------------------------------------------*
+      * ZERO-SUPPRESSED DISPLAY FIELDS                                 *
+      *----------------------------------------------------------------*
+       01 WS-DISP-FIELDS.
+          05 WS-TOTAL-COLLECTED    PIC Z(8)9.
+          05 WS-NO-OF-ACCOUNTS     PIC Z(5)9.
+          05 WS-CASH-INFLOW        PIC Z(8)9.
+          05 WS-BANK-TRANSFER      PIC Z(8)9.
+          05 WS-ACTIVE-ACCOUNTS    PIC Z(5)9.
+          05 WS-TOTAL-OUTSTANDING  PIC Z(8)9.
+          05 WS-OVERDUE-ACCOUNTS   PIC Z(5)9.
+          05 WS-TOTAL-OVERDUE-AMT  PIC Z(8)9.
+          05 WS-PENALTY-LEVIED     PIC Z(8)9.
+          05 WS-ACCOUNTS-OPENED    PIC Z(5)9.
+          05 WS-AMOUNT-DISBURSED   PIC Z(8)9.
+
+      *----------------------------------------------------------------*
+      * COMMAREA                                                       *
+      *----------------------------------------------------------------*
+       01 WS-COMMAREA.
+          05 WS-USER-ID            PIC X(6).
+          05 WS-SCREEN-CODE        PIC X(1).
+
+       LINKAGE SECTION.
+       01 DFHCOMMAREA.
+          05 USER-ID               PIC X(6).
+          05 USER-TYPE             PIC X(1).
+
+       PROCEDURE DIVISION.
+
+      *----------------------------------------------------------------*
+       000-MAIN-PARA.
+      *----------------------------------------------------------------*
+           IF EIBCALEN = 0
+              MOVE LOW-VALUES      TO DSHBDO
+              PERFORM 100-SEND-SCREEN
+              PERFORM 900-RETURN-CICS
+           END-IF
+
+           MOVE DFHCOMMAREA        TO WS-COMMAREA
+
+           IF WS-SCREEN-CODE = 'D'
+              MOVE LOW-VALUES      TO DSHBDO
+              PERFORM 100-SEND-SCREEN
+              PERFORM 900-RETURN-CICS
+           END-IF
+
+           PERFORM 200-FETCH-DASHBOARD
+           PERFORM 900-RETURN-CICS.
+
+      *----------------------------------------------------------------*
+       100-SEND-SCREEN.
+      *----------------------------------------------------------------*
+           EXEC CICS SEND
+               MAP('DSHBD')
+               MAPSET('DASHBD')
+               ERASE
+               FREEKB
+           END-EXEC
+           MOVE LOW-VALUES         TO WS-SCREEN-CODE.
+
+      *----------------------------------------------------------------*
+       200-FETCH-DASHBOARD.
+      *----------------------------------------------------------------*
+           EVALUATE EIBAID
+
+      *================ ENTER KEY =================================
+           WHEN DFHENTER
+               PERFORM 300-READ-KSDS
+               IF WS-RESP = DFHRESP(NORMAL)
+                  PERFORM 400-GET-DATE
+                  PERFORM 500-SEND-DATA
+               ELSE
+                  MOVE LOW-VALUES  TO DSHBDO
+                  PERFORM 100-SEND-SCREEN
+                  PERFORM 900-RETURN-CICS
+               END-IF
+
+      *================ PF3 - RETURN TO MENU =====================
+           WHEN DFHPF3
+               MOVE 'M'            TO WS-SCREEN-CODE
+               EXEC CICS XCTL
+                   PROGRAM('PACTMOD')
+                   COMMAREA(WS-COMMAREA)
+                   LENGTH(7)
+               END-EXEC
+
+      *================ OTHER KEYS ================================
+           WHEN OTHER
+               PERFORM 100-SEND-SCREEN
+               PERFORM 900-RETURN-CICS
+
+           END-EVALUATE.
+
+      *----------------------------------------------------------------*
+       300-READ-KSDS.
+      *----------------------------------------------------------------*
+           EXEC CICS READ
+               FILE('REPTFILE')
+               INTO(OUT-REC)
+               RIDFLD(WS-KSDS-KEY)
+               RESP(WS-RESP)
+           END-EXEC.
+
+      *----------------------------------------------------------------*
+       400-GET-DATE.
+      *----------------------------------------------------------------*
+           EXEC CICS ASKTIME
+               ABSTIME(WS-ABSTIME)
+           END-EXEC
+
+           EXEC CICS FORMATTIME
+               ABSTIME(WS-ABSTIME)
+               DDMMYYYY(WS-DATE)
+               DATESEP('/')
+           END-EXEC.
+
+      *----------------------------------------------------------------*
+       500-SEND-DATA.
+      *----------------------------------------------------------------*
+      *--- MOVE TO ZERO-SUPPRESSED FIELDS ---*
+           MOVE TOTAL-COLLECTED    TO WS-TOTAL-COLLECTED
+           MOVE NO-OF-ACCOUNTS     TO WS-NO-OF-ACCOUNTS
+           MOVE CASH-INFLOW        TO WS-CASH-INFLOW
+           MOVE BANK-TRANSFER      TO WS-BANK-TRANSFER
+           MOVE ACTIVE-ACCOUNTS    TO WS-ACTIVE-ACCOUNTS
+           MOVE TOTAL-OUTSTANDING  TO WS-TOTAL-OUTSTANDING
+           MOVE OVERDUE-ACCOUNTS   TO WS-OVERDUE-ACCOUNTS
+           MOVE TOTAL-OVERDUE-AMT  TO WS-TOTAL-OVERDUE-AMT
+           MOVE PENALTY-LEVIED     TO WS-PENALTY-LEVIED
+           MOVE ACCOUNTS-OPENED    TO WS-ACCOUNTS-OPENED
+           MOVE AMOUNT-DISBURSED   TO WS-AMOUNT-DISBURSED
+
+      *--- INITIALIZE MAP OUTPUT AREA ---*
+           MOVE LOW-VALUES              TO DSHBDO
+
+      *--- DATE ---*
+           MOVE WS-DATE                 TO DBDATEO
+
+      *--- COLLECTIONS SECTION ---*
+           MOVE WS-TOTAL-COLLECTED      TO DBTCOLO
+           MOVE WS-NO-OF-ACCOUNTS       TO DBNOACO
+           MOVE WS-CASH-INFLOW          TO DBCAFLO
+           MOVE WS-BANK-TRANSFER        TO DBBNKTO
+
+      *--- OVERDUE STATUS SECTION ---*
+           MOVE WS-OVERDUE-ACCOUNTS     TO DBOVRDO
+           MOVE WS-TOTAL-OVERDUE-AMT    TO DBTODAO
+           MOVE WS-PENALTY-LEVIED       TO DBPELO
+
+      *--- LOAN PORTFOLIO SECTION ---*
+           MOVE WS-ACTIVE-ACCOUNTS      TO DBATACO
+           MOVE WS-TOTAL-OUTSTANDING    TO DBTOSGO
+
+      *--- NEW BUSINESS SECTION ---*
+           MOVE WS-ACCOUNTS-OPENED      TO DBACOPO
+           MOVE WS-AMOUNT-DISBURSED     TO DBTDTO
+
+           PERFORM 100-SEND-SCREEN.
+
+      *----------------------------------------------------------------*
+       900-RETURN-CICS.
+      *----------------------------------------------------------------*
+           EXEC CICS RETURN
+               TRANSID('I009')
+               COMMAREA(WS-COMMAREA)
+               LENGTH(7)
+           END-EXEC.
+
