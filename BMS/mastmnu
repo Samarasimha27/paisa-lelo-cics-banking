@@ -1,0 +1,51 @@
+MSTMNU  DFHMSD MODE=INOUT,LANG=COBOL,STORAGE=AUTO,TYPE=&SYSPARM,       X
+               TIOAPFX=YES,CTRL=FREEKB,DSATTS=(COLOR,HILIGHT),         X
+               MAPATTS=(COLOR,HILIGHT)
+******
+MST     DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+        DFHMDF POS=(3,20),LENGTH=24,                                   X
+               INITIAL='PAISA LELO - MASTER MENU',COLOR=YELLOW,        X
+               ATTRB=(NORM,ASKIP)
+        DFHMDF POS=(3,47),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(6,15),INITIAL='ADMIN-ID:',LENGTH=9,COLOR=YELLOW,   X
+               ATTRB=(NORM,PROT)
+MSTNAM  DFHMDF POS=(6,25),LENGTH=6,ATTRB=ASKIP
+        DFHMDF POS=(6,32),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(7,3),LENGTH=74,ATTRB=(NORM),                       X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+ACTMOD  DFHMDF POS=(9,15),INITIAL='1.ACCOUNT MODULE  ',LENGTH=18,      X
+               ATTRB=ASKIP
+        DFHMDF POS=(9,34),LENGTH=1,ATTRB=ASKIP
+*****
+PAYMEN  DFHMDF POS=(11,15),INITIAL='2.REPAYMENTS / CASH COLLECTION',   X
+               LENGTH=30,ATTRB=ASKIP
+        DFHMDF POS=(11,46),LENGTH=1,ATTRB=ASKIP
+*****
+SETLMT  DFHMDF POS=(13,15),INITIAL='3.SETTLEMENT      ',LENGTH=18,     X
+               ATTRB=ASKIP
+        DFHMDF POS=(13,34),LENGTH=1,ATTRB=ASKIP
+*****
+DASHBR  DFHMDF POS=(15,15),INITIAL='4.DASHBOARD / REPORTS',LENGTH=21,  X
+               ATTRB=ASKIP
+        DFHMDF POS=(15,37),LENGTH=1,ATTRB=ASKIP
+*****
+        DFHMDF POS=(18,3),LENGTH=74,ATTRB=(NORM,PROT),                 X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+******
+        DFHMDF POS=(20,15),INITIAL='ENTER YOUR CHOICE:',LENGTH=18,     X
+               ATTRB=ASKIP
+MCHOI   DFHMDF POS=(20,34),LENGTH=1,ATTRB=(IC,UNPROT),                 X
+               HILIGHT=UNDERLINE
+        DFHMDF POS=(20,36),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(23,4),LENGTH=59,ATTRB=(PROT,NORM),                 X
+               INITIAL='                   F3=EXIT                     X
+               ENTER=SUBMIT'
+MSG     DFHMDF POS=(24,5),LENGTH=60,ATTRB=(PROT,NORM)
+*****
+        DFHMSD TYPE=FINAL
+               END
+
