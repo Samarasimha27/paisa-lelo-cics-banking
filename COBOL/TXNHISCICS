@@ -1,0 +1,366 @@
+      IDENTIFICATION DIVISION.
+       PROGRAM-ID. TXNH2.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       01 EOF              PIC X VALUE 'N'.
+       01 EOD              PIC X VALUE 'N'.
+       01 WS-TSQ-NAME      PIC X(11) VALUE 'CPAYHISTORY'.
+       01 WS-RESP          PIC S9(8) COMP.
+       01 WS-I             PIC S9(4) COMP.
+       01 WS-TEMP-INDEX    PIC S9(4) COMP.
+       01 WS-DATE          PIC X(10).
+       01 WS-ABSTIME       PIC X(10).
+
+       01 WS-REC.
+          05 TXNID         PIC 9(6).
+          05 TXN-TYPE      PIC X(10).
+          05 AMOUNT        PIC 9(6).
+          05 OUTSTDNG      PIC 9(6).
+          05 TXNDATE       PIC X(10).
+
+       01 WTRANS-REC.
+          05 WS-TXNID      PIC X(6).
+          05 WS-LACCNO     PIC X(6).
+          05 WS-TXNDATE    PIC X(10).
+          05 WS-TXNNAME    PIC X(7).
+          05 WS-TXNTYPE    PIC X(9).
+          05 WS-TXNAMT     PIC X(6).
+          05 WS-OUTSTD     PIC X(6).
+          05 WS-ENTRBY     PIC X(6).
+          05 WS-EXTRA      PIC X(24).
+       01 WS-COMMAREA.
+          05 WS-ACTNO      PIC X(6).
+          05 WS-SCREEN     PIC X(1).
+
+       01  WS-LOAN-RECORD.
+           05 WS-LOAN-ACT-NO        PIC X(6).
+           05 WS-CUST-ID            PIC X(6).
+           05 WS-SCHEME             PIC X(1).
+           05 WS-LOAN-AMT           PIC 9(6).
+           05 WS-TENURE             PIC X(3).
+           05 WS-INTEREST           PIC 9(2).
+           05 WS-BANK-ACCT          PIC X(10).
+           05 WS-INCOME             PIC 9(6).
+           05 WS-SURETY-ASSET       PIC X(10).
+           05 WS-SURETY-VAL         PIC 9(6).
+           05 WS-SURETY-ACCT        PIC X(6).
+           05 WS-OUTSTDG            PIC 9(6).
+           05 WS-PAID-TO-DATE       PIC X(8).
+           05 WS-NEXT-DUE-DT        PIC X(8).
+           05 WS-DAYS-OVERD         PIC 9(3).
+           05 WS-PENALTY            PIC 9(6).
+           05 WS-STATUS             PIC X(1).
+           05 WS-OPEN-DATE          PIC X(8).
+           05 WS-CLOSE-DATE         PIC X(8).
+           05 WS-NXT-INSTALLMNT     PIC 9(6).
+           05 EXTRA-FILLER          PIC X(37).
+       COPY PLTXNSC.
+       COPY DFHAID.
+
+       LINKAGE SECTION.
+       01 DFHCOMMAREA.
+          05 CA-ACTNO      PIC X(6).
+          05 CA-SCREEN     PIC X(1).
+          05 CA-LACCNO     PIC X(6).
+          05 CA-RECORDS    PIC 9(3).
+          05 CA-INDEX      PIC 9(3).
+
+       PROCEDURE DIVISION.
+
+       MAIN-PARA.
+           IF EIBCALEN = 0
+               MOVE 1 TO WS-I
+               MOVE LOW-VALUES TO TXNHISTO
+               EXEC CICS SEND
+                    MAP('TXNHIST')
+                    MAPSET('PLTXNSC')
+               END-EXEC
+
+               EXEC CICS RETURN
+                    TRANSID('TXN2')
+                    COMMAREA(WS-LACCNO)
+                    LENGTH(LENGTH OF WS-LACCNO)
+               END-EXEC
+           END-IF
+           MOVE DFHCOMMAREA TO WS-COMMAREA
+           IF WS-SCREEN = 'H'
+               MOVE 1 TO WS-I
+               MOVE SPACES TO TXNHISTO
+               EXEC CICS SEND
+                    MAP('TXNHIST')
+                    MAPSET('PLTXNSC')
+               END-EXEC
+               MOVE LOW-VALUES TO CA-SCREEN
+               EXEC CICS RETURN
+                    TRANSID('TXN2')
+                    COMMAREA(DFHCOMMAREA)
+                    LENGTH(LENGTH OF DFHCOMMAREA)
+               END-EXEC
+           ELSE
+               MOVE 1 TO CA-INDEX
+               EVALUATE EIBAID
+
+                   WHEN DFHENTER
+                       PERFORM RECEIVE-PARA
+
+                   WHEN DFHPF3
+                       PERFORM BACK
+
+                   WHEN DFHPF7
+                       PERFORM NEXT-PAGE
+
+                   WHEN DFHPF8
+                       PERFORM PREV-PAGE
+
+                   WHEN DFHPF12
+                       PERFORM CLEAR
+
+               END-EVALUATE
+
+               PERFORM DISPLAY-PARA
+
+               EXEC CICS SEND
+                    MAP('TXNHIST')
+                    MAPSET('PLTXNSC')
+               END-EXEC
+               EXEC CICS RETURN
+                    TRANSID('TXN2')
+                    COMMAREA(DFHCOMMAREA)
+                    LENGTH(LENGTH OF DFHCOMMAREA)
+               END-EXEC
+           END-IF.
+
+       RECEIVE-PARA.
+
+           EXEC CICS RECEIVE
+                MAP('TXNHIST')
+                MAPSET('PLTXNSC')
+                RESP(WS-RESP)
+           END-EXEC
+           MOVE TXNACNI  TO CA-LACCNO
+           MOVE 1 TO CA-RECORDS
+           EXEC CICS READ
+                FILE('PLLOANFL')
+                INTO(WS-LOAN-RECORD)
+                RIDFLD(CA-LACCNO)
+                RESP(WS-RESP)
+           END-EXEC
+           PERFORM LOAD-TSQ.
+
+       LOAD-TSQ.
+
+           MOVE 0 TO CA-RECORDS
+           MOVE LOW-VALUES TO WS-TXNID
+           EXEC CICS DELETEQ TS
+                QUEUE(WS-TSQ-NAME)
+                RESP(WS-RESP)
+           END-EXEC
+           EXEC CICS STARTBR
+                FILE('PLTXNFL')
+                RIDFLD(WS-TXNID)
+                KEYLENGTH(6)
+                RESP(WS-RESP)
+           END-EXEC
+
+           MOVE 'N' TO EOF
+           MOVE  0 TO  CA-RECORDS
+           PERFORM UNTIL EOF = 'Y'
+
+               EXEC CICS READNEXT
+                    FILE('PLTXNFL')
+                    INTO(WTRANS-REC)
+                    RIDFLD(WS-TXNID)
+                    KEYLENGTH(6)
+                    RESP(WS-RESP)
+               END-EXEC
+
+               IF WS-RESP = DFHRESP(ENDFILE)
+                   MOVE 'Y' TO EOF
+                   EXEC CICS ENDBR
+                        FILE('PLTXNFL')
+                   END-EXEC
+               ELSE
+                   EXEC CICS SEND TEXT FROM (WS-ACTNO) LENGTH(6)
+                   END-EXEC
+                   EXEC CICS SEND TEXT FROM (WS-CUST-ID) LENGTH(6)
+                   END-EXEC
+                   IF WS-ACTNO = WS-CUST-ID
+                   IF WS-LACCNO = TXNACNO
+      *                MOVE SPACES TO WS-REC
+                       MOVE WS-TXNID   TO TXNID
+                       MOVE WS-TXNTYPE TO TXN-TYPE
+                       MOVE WS-TXNAMT  TO AMOUNT
+                       MOVE WS-OUTSTD  TO OUTSTDNG
+                       MOVE WS-TXNDATE TO TXNDATE
+
+                       ADD  1 TO CA-RECORDS
+      *                MOVE WS-TEMP-INDEX TO TXNRECO
+                       EXEC CICS WRITEQ TS
+                            QUEUE(WS-TSQ-NAME)
+                            FROM(WS-REC)
+                            ITEM(WS-I)
+                            MAIN
+                       END-EXEC
+                       EXEC CICS ASKTIME
+                       ABSTIME(WS-ABSTIME)
+                       END-EXEC
+                       EXEC CICS FORMATTIME
+                       ABSTIME(WS-ABSTIME)
+                       DDMMYYYY(WS-DATE)
+                       DATESEP('/')
+                       END-EXEC
+                       MOVE WS-DATE  TO  DBDATEO
+                       MOVE CA-RECORDS TO TXNRECO
+                   END-IF
+                   END-IF
+               END-IF
+
+           END-PERFORM.
+
+       DISPLAY-PARA.
+
+           MOVE CA-INDEX TO WS-TEMP-INDEX
+           MOVE 'N' TO EOD
+
+           PERFORM VARYING WS-I FROM 1 BY 1
+                   UNTIL WS-I > 10 OR EOD = 'Y'
+
+               EXEC CICS READQ TS
+                    QUEUE(WS-TSQ-NAME)
+                    ITEM(WS-TEMP-INDEX)
+                    INTO(WS-REC)
+                    RESP(WS-RESP)
+               END-EXEC
+
+               IF WS-RESP NOT = DFHRESP(NORMAL)
+                   MOVE 'Y' TO EOD
+               ELSE
+                   EVALUATE WS-I
+                       WHEN 1
+                           MOVE TXNID    TO TXNID1O
+                           MOVE TXN-TYPE TO TXNTY1O
+                           MOVE AMOUNT   TO AMT1O
+                           MOVE OUTSTDNG TO OUTS1O
+                           MOVE TXNDATE  TO DATE1O
+                       WHEN 2
+                           MOVE TXNID    TO TXNID2O
+                           MOVE TXN-TYPE TO TXNTY2O
+                           MOVE AMOUNT   TO AMT2O
+                           MOVE OUTSTDNG TO OUTS2O
+                           MOVE TXNDATE  TO DATE2O
+                       WHEN 3
+                           MOVE TXNID    TO TXNID3O
+                           MOVE TXN-TYPE TO TXNTY3O
+                           MOVE AMOUNT   TO AMT3O
+                           MOVE OUTSTDNG TO OUTS3O
+                           MOVE TXNDATE  TO DATE3O
+                       WHEN 4
+                           MOVE TXNID    TO TXNID4O
+                           MOVE TXN-TYPE TO TXNTY4O
+                           MOVE AMOUNT   TO AMT4O
+                           MOVE OUTSTDNG TO OUTS4O
+                           MOVE TXNDATE  TO DATE1O
+                       WHEN 5
+                           MOVE TXNID    TO TXNID5O
+                           MOVE TXN-TYPE TO TXNTY5O
+                           MOVE AMOUNT   TO AMT5O
+                           MOVE OUTSTDNG TO OUTS5O
+                           MOVE TXNDATE  TO DATE5O
+                       WHEN 6
+                           MOVE TXNID    TO TXNID6O
+                           MOVE TXN-TYPE TO TXNTY6O
+                           MOVE AMOUNT   TO AMT6O
+                           MOVE OUTSTDNG TO OUTS6O
+                           MOVE TXNDATE  TO DATE6O
+                       WHEN 7
+                           MOVE TXNID    TO TXNID7O
+                           MOVE TXN-TYPE TO TXNTY7O
+                           MOVE AMOUNT   TO AMT7O
+                           MOVE OUTSTDNG TO OUTS7O
+                           MOVE TXNDATE  TO DATE7O
+                       WHEN 8
+                           MOVE TXNID    TO TXNID8O
+                           MOVE TXN-TYPE TO TXNTY8O
+                           MOVE AMOUNT   TO AMT8O
+                           MOVE OUTSTDNG TO OUTS8O
+                           MOVE TXNDATE  TO DATE8O
+                       WHEN 9
+                           MOVE TXNID    TO TXNID9O
+                           MOVE TXN-TYPE TO TXNTY9O
+                           MOVE AMOUNT   TO AMT9O
+                           MOVE OUTSTDNG TO OUTS9O
+                           MOVE TXNDATE  TO DATE9O
+                       WHEN 10
+                           MOVE TXNID    TO TXNID10O
+                           MOVE TXN-TYPE TO TXNTY10O
+                           MOVE AMOUNT   TO AMT10O
+                           MOVE OUTSTDNG TO OUTS10O
+                           MOVE TXNDATE  TO DATE10O
+                   END-EVALUATE
+
+                   ADD 1 TO WS-TEMP-INDEX
+      *            MOVE WS-TEMP-INDEX TO TXNRECO
+               END-IF
+
+           END-PERFORM.
+
+
+           EXEC CICS SEND
+                MAP('TXNHIST')
+                MAPSET('PLTXNSC')
+           END-EXEC.
+
+       NEXT-PAGE.
+           IF CA-INDEX + 10 <= CA-RECORDS
+              MOVE 'REACHED BOTTOM' TO MSGO
+              CONTINUE
+           ELSE
+              MOVE SPACES TO TXNID1O TXNTY1O AMT1O OUTS1O DATE1O
+              TXNID2O TXNTY2O AMT2O OUTS2O DATE2O
+              TXNID3O TXNTY3O AMT3O OUTS3O DATE3O
+              TXNID4O TXNTY4O AMT4O OUTS4O DATE4O
+              TXNID5O TXNTY5O AMT5O OUTS5O DATE5O
+              TXNID6O TXNTY6O AMT6O OUTS6O DATE6O
+              TXNID7O TXNTY7O AMT7O OUTS7O DATE7O
+              TXNID8O TXNTY8O AMT8O OUTS8O DATE8O
+              TXNID9O TXNTY9O AMT9O OUTS9O DATE9O
+              TXNID10O TXNTY10O AMT10O OUTS10O DATE10O
+              ADD 10 TO CA-INDEX
+           END-IF.
+
+       PREV-PAGE.
+           IF CA-INDEX > 10
+               MOVE 'REACHED BOTTOM' TO MSGO
+               CONTINUE
+           ELSE
+              MOVE SPACES TO TXNID1O TXNTY1O AMT1O OUTS1O DATE1O
+               TXNID2O TXNTY2O AMT2O OUTS2O DATE2O
+               TXNID3O TXNTY3O AMT3O OUTS3O DATE3O
+               TXNID4O TXNTY4O AMT4O OUTS4O DATE4O
+               TXNID5O TXNTY5O AMT5O OUTS5O DATE5O
+               TXNID6O TXNTY6O AMT6O OUTS6O DATE6O
+               TXNID7O TXNTY7O AMT7O OUTS7O DATE7O
+               TXNID8O TXNTY8O AMT8O OUTS8O DATE8O
+               TXNID9O TXNTY9O AMT9O OUTS9O DATE9O
+               TXNID10O TXNTY10O AMT10O OUTS10O DATE10O
+               SUBTRACT 10 FROM CA-INDEX
+           END-IF.
+
+       BACK.
+           MOVE 'C' TO WS-SCREEN
+           EXEC CICS XCTL
+                PROGRAM('PCUST1')
+                COMMAREA(WS-COMMAREA)
+                LENGTH(7)
+           END-EXEC.
+       CLEAR.
+           MOVE LOW-VALUES TO TXNHISTO.
+           EXEC CICS RETURN
+                TRANSID('TXN2')
+                COMMAREA(WS-LACCNO)
+                LENGTH(LENGTH OF WS-LACCNO)
+           END-EXEC.
+
