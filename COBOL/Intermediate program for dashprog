@@ -1,0 +1,72 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. DLYKSDS.
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+            SELECT INFL ASSIGN DD1
+            ORGANIZATION IS SEQUENTIAL
+            ACCESS MODE IS SEQUENTIAL
+            FILE STATUS IS FS1.
+            SELECT OUTFL ASSIGN DD2
+            ORGANIZATION IS INDEXED
+            ACCESS MODE IS RANDOM
+            RECORD KEY IS OUT-KEY2
+            FILE STATUS IS FS2.
+       DATA DIVISION.
+       FILE SECTION.
+       FD   INFL
+            RECORDING MODE IS F.
+       01  IN-REC.
+           05 OUT-KEY             PIC X(10).
+           05 TOTAL-COLLECTED     PIC 9(9).
+           05 NO-OF-ACCOUNTS      PIC 9(6).
+           05 CASH-INFLOW         PIC 9(9).
+           05 BANK-TRANSFER       PIC 9(9).
+           05 ACTIVE-ACCOUNTS     PIC 9(6).
+           05 TOTAL-OUTSTANDING   PIC 9(9).
+           05 OVERDUE-ACCOUNTS    PIC 9(6).
+           05 TOTAL-OVERDUE-AMT   PIC 9(9).
+           05 PENALTY-LEVIED      PIC 9(9).
+           05 ACCOUNTS-OPENED     PIC 9(6).
+           05 AMOUNT-DISBURSED    PIC 9(9).
+       FD  OUTFL.
+       01  OUT-REC.
+           05 OUT-KEY2             PIC X(10).
+           05 TOTAL-COLLECTED2     PIC 9(9).
+           05 NO-OF-ACCOUNTS2      PIC 9(6).
+           05 CASH-INFLOW2         PIC 9(9).
+           05 BANK-TRANSFER2       PIC 9(9).
+           05 ACTIVE-ACCOUNTS2     PIC 9(6).
+           05 TOTAL-OUTSTANDING2   PIC 9(9).
+           05 OVERDUE-ACCOUNTS2    PIC 9(6).
+           05 TOTAL-OVERDUE-AMT2   PIC 9(9).
+           05 PENALTY-LEVIED2      PIC 9(9).
+           05 ACCOUNTS-OPENED2     PIC 9(6).
+           05 AMOUNT-DISBURSED2    PIC 9(9).
+       WORKING-STORAGE SECTION.
+       01  FS1                     PIC XX.
+       01  FS2                     PIC XX.
+       01  KEYS                    PIC X(10) VALUE 'DASHBOARDK'.
+       PROCEDURE DIVISION.
+           OPEN INPUT INFL
+           OPEN I-O OUTFL
+           READ INFL
+           MOVE KEYS TO OUT-KEY2
+           READ OUTFL
+           MOVE OUT-KEY             TO OUT-KEY2
+           MOVE TOTAL-COLLECTED     TO TOTAL-COLLECTED2
+           MOVE NO-OF-ACCOUNTS      TO NO-OF-ACCOUNTS2
+           MOVE CASH-INFLOW         TO CASH-INFLOW2
+           MOVE BANK-TRANSFER       TO BANK-TRANSFER2
+           MOVE ACTIVE-ACCOUNTS     TO ACTIVE-ACCOUNTS2
+           MOVE TOTAL-OUTSTANDING   TO TOTAL-OUTSTANDING2
+           MOVE OVERDUE-ACCOUNTS    TO OVERDUE-ACCOUNTS2
+           MOVE TOTAL-OVERDUE-AMT   TO TOTAL-OVERDUE-AMT2
+           MOVE PENALTY-LEVIED      TO PENALTY-LEVIED2
+           MOVE ACCOUNTS-OPENED     TO ACCOUNTS-OPENED2
+           MOVE AMOUNT-DISBURSED    TO AMOUNT-DISBURSED2
+           REWRITE OUT-REC END-REWRITE
+           CLOSE INFL
+           CLOSE OUTFL
+           STOP RUN.
+
