@@ -1,0 +1,106 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. PMASTT.
+
+       DATA DIVISION.
+
+       WORKING-STORAGE SECTION.
+
+       COPY DFHAID.
+       COPY MSTMNU.
+
+       01 WS-RESP PIC S9(8) COMP.
+       01 WS-MSG  PIC X(40).
+
+       01 WS-COMMAREA.
+          05 WS-USER PIC X(6).
+          05 WS-TYPE PIC X(1).
+       LINKAGE SECTION.
+       01 DFHCOMMAREA.
+          05 CM-USER-ID   PIC X(6).
+          05 CM-USER-TYPE PIC X(1).
+
+       PROCEDURE DIVISION.
+
+       MAIN.
+
+           IF EIBCALEN = 0
+               PERFORM SEND-SCREEN
+               EXEC CICS RETURN TRANSID('PM01') END-EXEC
+           END-IF
+      *
+           MOVE DFHCOMMAREA TO WS-COMMAREA
+           IF WS-TYPE = 'M'
+              PERFORM SEND-SCREEN
+              MOVE LOW-VALUES TO WS-TYPE
+              EXEC CICS RETURN TRANSID('PM01')
+                    COMMAREA(WS-COMMAREA)
+                    LENGTH(7)
+              END-EXEC
+           END-IF
+      *
+           IF EIBAID = DFHPF3
+               EXEC CICS XCTL PROGRAM('PLCODE') END-EXEC
+           END-IF
+
+           PERFORM RECEIVE-SCREEN.
+
+           PERFORM PROCESS-OPTION.
+
+       END-PGM.
+           EXEC CICS RETURN
+           END-EXEC.
+
+       SEND-SCREEN.
+           MOVE LOW-VALUES TO MSTO
+           MOVE CM-USER-ID TO MSTNAMO
+           MOVE SPACES TO MSGO
+           EXEC CICS SEND
+                MAP('MST')
+                MAPSET('MSTMNU')
+                ERASE
+           END-EXEC.
+
+       RECEIVE-SCREEN.
+
+           EXEC CICS RECEIVE
+                MAP('MST')
+                MAPSET('MSTMNU')
+           END-EXEC.
+
+       PROCESS-OPTION.
+
+           EVALUATE MCHOII(1:1)
+
+               WHEN '1'
+                   MOVE 'I' TO WS-TYPE
+                   EXEC CICS XCTL PROGRAM('PACTMOD')
+                        COMMAREA(WS-COMMAREA)
+                        LENGTH(7)
+                   END-EXEC
+
+               WHEN '2'
+                    MOVE 'R' TO WS-TYPE
+                   EXEC CICS XCTL PROGRAM('MSTCASH2')
+                        COMMAREA(WS-COMMAREA)
+                        LENGTH(7)
+                   END-EXEC
+
+               WHEN '3'
+                   MOVE 'S' TO WS-TYPE
+                   EXEC CICS XCTL PROGRAM('SETL')
+                        COMMAREA(WS-COMMAREA)
+                        LENGTH(7)
+                   END-EXEC
+
+               WHEN '4'
+                   MOVE 'D' TO WS-TYPE
+                   EXEC CICS XCTL PROGRAM('DASHPROG')
+                        COMMAREA(WS-COMMAREA)
+                        LENGTH(7)
+                   END-EXEC
+               WHEN OTHER
+                   MOVE 'INVALID OPTION' TO MSGO
+                   PERFORM SEND-SCREEN
+
+           END-EVALUATE.
+
