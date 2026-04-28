@@ -1,0 +1,373 @@
+      ************************************************************
+      * PROGRAM   : DELINQ2
+      * DESCRIPTION: PROCESSES LOAN FILE AGAINST TXN FILE.
+      *              - SKIPS STATUS='C', PROCESSES STATUS='A' ONLY
+      *              - IF TODAY'S INSTALMENT NOT PAID, ADDS TO NEXT-INST
+      *              - IF DAYS-OVERD > 7, PENALTY = (DAYS-OVERD-7)*100
+      * OUTPUT     : PLAIN SEQUENTIAL REPORT, NO HEADINGS
+      ******************************************************************
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. DELINQ2.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+
+           SELECT LOANFILE
+               ASSIGN TO DD1
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS SEQUENTIAL
+               RECORD KEY IS L-LOAN-ACT-NO
+               FILE STATUS IS WS-LOAN-FS.
+
+           SELECT TXNFILE
+               ASSIGN TO DD2
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS SEQUENTIAL
+               RECORD KEY IS WS-TXNID
+               FILE STATUS IS WS-TXN-FS.
+
+           SELECT RPTFILE
+               ASSIGN TO DD3
+               ORGANIZATION IS SEQUENTIAL
+               FILE STATUS IS WS-RPT-FS.
+
+       DATA DIVISION.
+       FILE SECTION.
+
+       FD  LOANFILE.
+       01  WS-LOAN-RECORD.
+           05 L-LOAN-ACT-NO    PIC X(6).
+           05 L-CUST-ID        PIC X(6).
+           05 L-SCHEME         PIC X(1).
+           05 L-LOAN-AMT       PIC 9(6).
+           05 L-TENURE         PIC 9(3).
+           05 L-INTEREST       PIC 9(2).
+           05 L-BANK-ACCT      PIC X(10).
+           05 L-INCOME         PIC 9(6).
+           05 L-SURETY-ASSET   PIC X(10).
+           05 L-SURETY-VAL     PIC 9(6).
+           05 L-SURETY-ACCT    PIC X(6).
+           05 L-OUTSTDG        PIC 9(6).
+           05 L-PAID-TO-DATE   PIC X(8).
+           05 L-NEXT-DUE-DT    PIC 9(8).
+           05 L-DAYS-OVERD     PIC 9(3).
+           05 L-PENALTY        PIC 9(6).
+           05 L-STATUS         PIC X(1).
+           05 L-OPEN-DATE      PIC 9(8).
+           05 L-CLOSE-DATE     PIC 9(8).
+           05 L-NXT-INSTALLMNT PIC 9(6).
+           05 L-FIRST-INST     PIC 9(6).
+           05 L-INSTALLMNT-AMT PIC 9(6).
+           05 EXTRA-SPACE      PIC X(22).
+
+       FD  TXNFILE.
+       01  WS-TXN-RECORD.
+           05 WS-TXNID         PIC X(6).
+           05 WS-LACCTNO       PIC X(6).
+           05 WS-TXNDATE       PIC X(10).
+           05 WS-TXNMODE       PIC X(7).
+           05 WS-TXNTYPE       PIC X(9).
+           05 WS-TXNAMT        PIC 9(6).
+           05 WS-TXNOUTSTD     PIC 9(6).
+           05 WS-ENTRYBY       PIC X(8).
+           05 TXN-EXTRA        PIC X(22).
+
+       FD  RPTFILE
+           RECORDING MODE IS F.
+       01  RPT-RECORD          PIC X(80).
+
+       WORKING-STORAGE SECTION.
+
+       01  WS-LOAN-FS          PIC XX VALUE SPACES.
+       01  WS-TXN-FS           PIC XX VALUE SPACES.
+       01  WS-RPT-FS           PIC XX VALUE SPACES.
+
+       01  WS-LOAN-EOF         PIC X  VALUE 'N'.
+           88  LOAN-EOF               VALUE 'Y'.
+       01  WS-TXN-EOF          PIC X  VALUE 'N'.
+           88  TXN-EOF                VALUE 'Y'.
+
+      *--- TODAY'S DATE ------------------------------------------------
+       01  WS-CURR-DATE-RAW    PIC X(8).
+       01  WS-TODAY-NUM        PIC 9(8).
+       01  WS-TODAY-DISP       PIC X(10).
+       01  WS-TXN-YYYY   PIC 9(4).
+       01  WS-TXN-MM     PIC 9(2).
+       01  WS-TXN-DD     PIC 9(2).
+
+      *--- TXN DATE PARSING -------------------------------------------
+       01  WS-TXN-DATE-NUM     PIC 9(8).
+
+      *--- SAVE AREA: HOLDS ALL TXN RECORDS FOR CURRENT LOAN ----------
+      *    WE DO TWO-PASS: READ ALL TXNS INTO TABLE THEN SEARCH.
+      *    SIMPLER APPROACH: SEQUENTIAL SCAN WITH SAVE/RESTORE NOT
+      *    POSSIBLE ON KSDS. SO WE LOAD TXN INTO TABLE AT INIT.
+      *    MAX 9999 TXN RECORDS ASSUMED - ADJUST AS NEEDED.
+      ******************************************************************
+      *    NOTE: IF TXN FILE IS LARGE, USE ALTERNATE INDEX INSTEAD.
+      ******************************************************************
+       01  WS-TXN-TABLE.
+           05 WS-TXN-MAX       PIC 9(5) VALUE 9999.
+           05 WS-TXN-COUNT     PIC 9(5) VALUE ZEROS.
+           05 WS-TXN-ENTRY     OCCURS 9999 TIMES
+                               INDEXED BY WS-TX-IDX.
+               10 WT-LACCTNO   PIC X(6).
+               10 WT-TXNDATE   PIC X(10).
+               10 WT-TXNTYPE   PIC X(9).
+               10 WT-TXNAMT    PIC 9(6).
+
+      *--- COMPUTATION FIELDS -----------------------------------------
+       01  WS-PENALTY-CALC     PIC 9(6)  VALUE ZEROS.
+       01  WS-NEW-NEXT-INST    PIC 9(6)  VALUE ZEROS.
+       01  WS-INST-PAID        PIC X     VALUE 'N'.
+           88  PAID-TODAY             VALUE 'Y'.
+           88  NOT-PAID-TODAY         VALUE 'N'.
+       01  WS-PENALIZABLE-DAYS PIC 9(3)  VALUE ZEROS.
+
+      *--- OUTPUT DETAIL LINE (PLAIN, NO HEADINGS) --------------------
+      *    LAYOUT: ACCT(6) SPACE(1) LOANAMT(6) SPACE(1) LASTPAID(10)
+      *            SPACE(1) INSTAMT(6) SPACE(1) CURRDT(10) SPACE(1)
+      *            PENALTY(6) SPACE(1) NEXTINST(6)
+      *    TOTAL = 6+1+6+1+10+1+6+1+10+1+6+1+6 = 56 BYTES
+       01  RPT-DETAIL.
+           05 RD-LOAN-ACCT     PIC X(6).
+           05 FILLER           PIC X(1)  VALUE SPACE.
+           05 RD-LOAN-AMT      PIC 9(6).
+           05 FILLER           PIC X(1)  VALUE SPACE.
+           05 RD-LAST-PAID     PIC X(10).
+           05 FILLER           PIC X(1)  VALUE SPACE.
+           05 RD-INST-AMT      PIC 9(6).
+           05 FILLER           PIC X(1)  VALUE SPACE.
+           05 RD-CURR-DATE     PIC X(10).
+           05 FILLER           PIC X(1)  VALUE SPACE.
+           05 RD-PENALTY       PIC 9(6).
+           05 FILLER           PIC X(1)  VALUE SPACE.
+           05 RD-NEXT-INST     PIC 9(6).
+           05 FILLER           PIC X(24) VALUE SPACES.
+
+       PROCEDURE DIVISION.
+
+       0000-MAIN.
+           PERFORM 1000-INIT
+           PERFORM 2000-PROCESS-LOANS
+               UNTIL LOAN-EOF
+           PERFORM 9000-WRAPUP
+           STOP RUN.
+
+      ******************************************************************
+       1000-INIT.
+      ******************************************************************
+      *--- GET TODAY'S DATE AS YYYYMMDD --------------------------------
+           MOVE FUNCTION CURRENT-DATE(1:8) TO WS-CURR-DATE-RAW
+      *    MOVE FUNCTION NUMVAL(WS-CURR-DATE-RAW)
+      *                                    TO WS-TODAY-NUM
+           MOVE WS-CURR-DATE-RAW TO WS-TODAY-NUM
+      *--- FORMAT DD/MM/YYYY FOR REPORT --------------------------------
+           STRING
+               WS-CURR-DATE-RAW(7:2) DELIMITED SIZE
+               '/'                   DELIMITED SIZE
+               WS-CURR-DATE-RAW(5:2) DELIMITED SIZE
+               '/'                   DELIMITED SIZE
+               WS-CURR-DATE-RAW(1:4) DELIMITED SIZE
+               INTO WS-TODAY-DISP
+
+      *--- OPEN FILES --------------------------------------------------
+           OPEN INPUT LOANFILE
+           IF WS-LOAN-FS NOT = '00'
+               DISPLAY 'LOANFILE OPEN ERROR: ' WS-LOAN-FS
+               STOP RUN
+           END-IF
+
+           OPEN INPUT TXNFILE
+           IF WS-TXN-FS NOT = '00'
+               DISPLAY 'TXNFILE OPEN ERROR: ' WS-TXN-FS
+               STOP RUN
+           END-IF
+
+           OPEN OUTPUT RPTFILE
+           IF WS-RPT-FS NOT = '00'
+               DISPLAY 'RPTFILE OPEN ERROR: ' WS-RPT-FS
+               STOP RUN
+           END-IF
+
+      *--- LOAD ENTIRE TXN FILE INTO MEMORY TABLE ----------------------
+           PERFORM 1100-LOAD-TXN-TABLE
+
+      *--- CLOSE TXN FILE (ALL DATA NOW IN TABLE) ----------------------
+           CLOSE TXNFILE
+
+      *--- READ FIRST LOAN RECORD --------------------------------------
+           READ LOANFILE NEXT RECORD
+               AT END    MOVE 'Y' TO WS-LOAN-EOF
+           END-READ.
+
+      ******************************************************************
+       1100-LOAD-TXN-TABLE.
+      ******************************************************************
+           MOVE 'N' TO WS-TXN-EOF
+           MOVE ZEROS TO WS-TXN-COUNT
+
+           READ TXNFILE NEXT RECORD
+               AT END MOVE 'Y' TO WS-TXN-EOF
+           END-READ
+
+           PERFORM UNTIL TXN-EOF
+               ADD 1 TO WS-TXN-COUNT
+               MOVE WS-LACCTNO  TO
+                   WT-LACCTNO(WS-TXN-COUNT)
+               MOVE WS-TXNDATE  TO
+                   WT-TXNDATE(WS-TXN-COUNT)
+               MOVE WS-TXNTYPE  TO
+                   WT-TXNTYPE(WS-TXN-COUNT)
+               MOVE WS-TXNAMT   TO
+                   WT-TXNAMT(WS-TXN-COUNT)
+
+               READ TXNFILE NEXT RECORD
+                   AT END MOVE 'Y' TO WS-TXN-EOF
+               END-READ
+           END-PERFORM.
+
+      ******************************************************************
+       2000-PROCESS-LOANS.
+      ******************************************************************
+      *    IF L-STATUS = 'C'
+      *        PERFORM 2900-NEXT-LOAN
+      *        GO TO 2000-EXIT
+      *    END-IF
+      *
+      *    IF L-STATUS NOT = 'A'
+      *        PERFORM 2900-NEXT-LOAN
+      *        GO TO 2000-EXIT
+      *    END-IF
+      *
+      *    MOVE 'N'   TO WS-INST-PAID
+      *    MOVE ZEROS TO WS-PENALTY-CALC
+      *    MOVE ZEROS TO WS-NEW-NEXT-INST
+      *
+      *    PERFORM 3000-CHECK-PAYMENT
+      *    PERFORM 4000-CALC-PENALTY
+      *    PERFORM 5000-CALC-NEXT-INST
+      *    PERFORM 6000-WRITE-DETAIL
+
+           IF L-STATUS = 'A'
+
+               MOVE 'N'   TO WS-INST-PAID
+               MOVE ZEROS TO WS-PENALTY-CALC
+               MOVE ZEROS TO WS-NEW-NEXT-INST
+
+               PERFORM 3000-CHECK-PAYMENT
+                IF NOT-PAID-TODAY
+                   PERFORM 4000-CALC-PENALTY
+                   PERFORM 5000-CALC-NEXT-INST
+                   PERFORM 6000-WRITE-DETAIL
+                END-IF
+           END-IF
+           PERFORM 2900-NEXT-LOAN.
+
+       2000-EXIT.
+           EXIT.
+
+       2900-NEXT-LOAN.
+           READ LOANFILE NEXT RECORD
+               AT END MOVE 'Y' TO WS-LOAN-EOF
+           END-READ.
+
+      ******************************************************************
+       3000-CHECK-PAYMENT.
+      ******************************************************************
+      * SCAN THE IN-MEMORY TXN TABLE FOR A RECORD WHERE:
+      *   ACCOUNT = CURRENT LOAN ACCOUNT
+      *   DATE    = TODAY (DD/MM/YYYY)
+      *   TYPE    CONTAINS 'ONLINE' (INSTALMENT PAYMENT)
+      ******************************************************************
+           PERFORM VARYING WS-TX-IDX FROM 1 BY 1
+               UNTIL WS-TX-IDX > WS-TXN-COUNT
+
+               IF WT-LACCTNO(WS-TX-IDX) = L-LOAN-ACT-NO
+
+      *--- CONVERT TXN DATE DD/MM/YYYY TO NUMERIC YYYYMMDD -----------
+      *            COMPUTE WS-TXN-DATE-NUM =
+      *                (FUNCTION NUMVAL(
+      *                    WT-TXNDATE(WS-TX-IDX)(7:4)) * 10000) +
+      *                (FUNCTION NUMVAL(
+      *                    WT-TXNDATE(WS-TX-IDX)(4:2)) * 100)   +
+      *                FUNCTION NUMVAL(
+      *                    WT-TXNDATE(WS-TX-IDX)(1:2))
+
+                  MOVE WT-TXNDATE(WS-TX-IDX)(7:4) TO WS-TXN-YYYY
+                  MOVE WT-TXNDATE(WS-TX-IDX)(4:2) TO WS-TXN-MM
+                  MOVE WT-TXNDATE(WS-TX-IDX)(1:2) TO WS-TXN-DD
+
+                  COMPUTE WS-TXN-DATE-NUM =
+                          WS-TXN-YYYY * 10000 +
+                          WS-TXN-MM   * 100   +
+                          WS-TXN-DD
+                      DISPLAY WS-LACCTNO
+                      DISPLAY WS-TXN-DATE-NUM
+                      DISPLAY WS-TODAY-NUM
+
+                   IF WS-TXN-DATE-NUM = WS-TODAY-NUM
+      *                IF WT-TXNTYPE(WS-TX-IDX)(1:6) = 'ONLINE'
+      *                END-IF
+                           MOVE 'Y' TO WS-INST-PAID
+                   END-IF
+               END-IF
+           END-PERFORM.
+
+      ******************************************************************
+       4000-CALC-PENALTY.
+      ******************************************************************
+           MOVE ZEROS TO WS-PENALTY-CALC
+
+           IF L-DAYS-OVERD > 7
+               COMPUTE WS-PENALIZABLE-DAYS =
+                   L-DAYS-OVERD - 7
+               COMPUTE WS-PENALTY-CALC =
+                   WS-PENALIZABLE-DAYS * 100
+           END-IF.
+
+      ******************************************************************
+       5000-CALC-NEXT-INST.
+      ******************************************************************
+           MOVE L-NXT-INSTALLMNT TO WS-NEW-NEXT-INST
+
+           IF NOT-PAID-TODAY
+               COMPUTE WS-NEW-NEXT-INST =
+                   L-NXT-INSTALLMNT + L-INSTALLMNT-AMT
+           END-IF.
+
+      ******************************************************************
+       6000-WRITE-DETAIL.
+      ******************************************************************
+           INITIALIZE RPT-DETAIL
+
+           MOVE L-LOAN-ACT-NO    TO RD-LOAN-ACCT
+           MOVE L-LOAN-AMT       TO RD-LOAN-AMT
+           MOVE L-INSTALLMNT-AMT TO RD-INST-AMT
+           MOVE WS-TODAY-DISP    TO RD-CURR-DATE
+           MOVE WS-PENALTY-CALC  TO RD-PENALTY
+           MOVE WS-NEW-NEXT-INST TO RD-NEXT-INST
+
+      *--- FORMAT LAST PAID DATE: 9(8) YYYYMMDD -> DD/MM/YYYY ---------
+           IF L-PAID-TO-DATE = ZEROS
+               MOVE '00/00/0000' TO RD-LAST-PAID
+           ELSE
+               STRING
+                   L-PAID-TO-DATE(1:2) DELIMITED SIZE
+                   '/'                 DELIMITED SIZE
+                   L-PAID-TO-DATE(3:2) DELIMITED SIZE
+                   '/'                 DELIMITED SIZE
+                   L-PAID-TO-DATE(5:4) DELIMITED SIZE
+                   INTO RD-LAST-PAID
+           END-IF
+
+           WRITE RPT-RECORD FROM RPT-DETAIL.
+
+      ******************************************************************
+       9000-WRAPUP.
+      ******************************************************************
+           CLOSE LOANFILE
+           CLOSE RPTFILE
+           STOP RUN.
+
