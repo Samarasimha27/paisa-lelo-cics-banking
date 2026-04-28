@@ -1,0 +1,258 @@
+PLTXNSC DFHMSD MODE=INOUT,LANG=COBOL,STORAGE=AUTO,TYPE=&SYSPARM,       X
+               TIOAPFX=YES,CTRL=FREEKB,DSATTS=(COLOR,HILIGHT),         X
+               MAPATTS=(COLOR,HILIGHT)
+TXNHIST DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+*
+* ------------------------------------------------------------------ *
+*  TITLE LINE
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(1,23),LENGTH=33,ATTRB=(NORM,PROT),                 X
+               COLOR=YELLOW,                                           X
+               INITIAL='PAISA LELO - TRANSACTION HISTORY'
+*
+* ------------------------------------------------------------------ *
+*  DATE INPUT FIELD
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(2,57),LENGTH=6,ATTRB=(NORM,PROT),                  X
+               INITIAL='DATE :'
+DBDATE  DFHMDF POS=(2,64),LENGTH=10,                                   X
+               ATTRB=(IC,NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(2,75),LENGTH=1,ATTRB=ASKIP
+*
+* ------------------------------------------------------------------ *
+*  ACCOUNT NUMBER + NAME
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(3,5),LENGTH=12,ATTRB=(NORM,PROT),                  X
+               INITIAL='ACCOUNT NO :'
+TXNACN  DFHMDF POS=(3,19),LENGTH=10,                                   X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE,COLOR=YELLOW
+        DFHMDF POS=(3,30),LENGTH=1,ATTRB=ASKIP
+TXNAME  DFHMDF POS=(3,36),LENGTH=20,                                   X
+               ATTRB=(NORM,UNPROT),COLOR=YELLOW
+        DFHMDF POS=(3,57),LENGTH=1,ATTRB=ASKIP
+*
+* ------------------------------------------------------------------ *
+*  SEPARATOR + COLUMN HEADERS
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(4,5),LENGTH=65,ATTRB=(NORM,PROT),                  X
+               INITIAL='-----------------------------------------------X
+               ----------------------'
+        DFHMDF POS=(6,5),LENGTH=8,ATTRB=(NORM,PROT),COLOR=YELLOW,      X
+               INITIAL='| TXN-ID'
+        DFHMDF POS=(6,14),LENGTH=2,ATTRB=(NORM,PROT),COLOR=YELLOW,     X
+               INITIAL=' |'
+        DFHMDF POS=(6,17),LENGTH=10,ATTRB=(NORM,PROT),COLOR=YELLOW,    X
+               INITIAL=' TXN-TYPE '
+        DFHMDF POS=(6,28),LENGTH=2,ATTRB=(NORM,PROT),COLOR=YELLOW,     X
+               INITIAL=' |'
+        DFHMDF POS=(6,31),LENGTH=7,ATTRB=(NORM,PROT),COLOR=YELLOW,     X
+               INITIAL='AMOUNT '
+        DFHMDF POS=(6,39),LENGTH=2,ATTRB=(NORM,PROT),COLOR=YELLOW,     X
+               INITIAL='|'
+        DFHMDF POS=(6,42),LENGTH=6,ATTRB=(NORM,PROT),COLOR=YELLOW,     X
+               INITIAL='OUTSTG'
+        DFHMDF POS=(6,49),LENGTH=2,ATTRB=(NORM,PROT),COLOR=YELLOW,     X
+               INITIAL='|'
+        DFHMDF POS=(6,52),LENGTH=10,ATTRB=(NORM,PROT),COLOR=YELLOW,    X
+               INITIAL='    DATE  '
+        DFHMDF POS=(6,63),LENGTH=1,ATTRB=(NORM,PROT),COLOR=YELLOW,     X
+               INITIAL='|'
+        DFHMDF POS=(7,5),LENGTH=65,ATTRB=(NORM,PROT),                  X
+               INITIAL='-----------------------------------------------X
+               ----------------------'
+*
+* ------------------------------------------------------------------ *
+*  ROW 1
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(8,5),LENGTH=1,ATTRB=(NORM,PROT),INITIAL='|'
+TXNID1  DFHMDF POS=(8,7),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(8,14),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+TXNTY1  DFHMDF POS=(8,17),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(8,28),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+AMT1    DFHMDF POS=(8,31),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(8,38),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+OUTS1   DFHMDF POS=(8,41),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(8,48),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+DATE1   DFHMDF POS=(8,51),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(8,62),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+*
+* ------------------------------------------------------------------ *
+*  ROW 2
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(9,5),LENGTH=1,ATTRB=(NORM,PROT),INITIAL='|'
+TXNID2  DFHMDF POS=(9,7),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(9,14),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+TXNTY2  DFHMDF POS=(9,17),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(9,28),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+AMT2    DFHMDF POS=(9,31),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(9,38),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+OUTS2   DFHMDF POS=(9,41),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(9,48),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+DATE2   DFHMDF POS=(9,51),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(9,62),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+*
+* ------------------------------------------------------------------ *
+*  ROW 3
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(10,5),LENGTH=1,ATTRB=(NORM,PROT),INITIAL='|'
+TXNID3  DFHMDF POS=(10,7),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(10,14),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+TXNTY3  DFHMDF POS=(10,17),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(10,28),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+AMT3    DFHMDF POS=(10,31),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(10,38),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+OUTS3   DFHMDF POS=(10,41),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(10,48),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+DATE3   DFHMDF POS=(10,51),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(10,62),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+*
+* ------------------------------------------------------------------ *
+*  ROW 4
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(11,5),LENGTH=1,ATTRB=(NORM,PROT),INITIAL='|'
+TXNID4  DFHMDF POS=(11,7),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,14),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+TXNTY4  DFHMDF POS=(11,17),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,28),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+AMT4    DFHMDF POS=(11,31),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,38),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+OUTS4   DFHMDF POS=(11,41),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,48),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+DATE4   DFHMDF POS=(11,51),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,62),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+*
+* ------------------------------------------------------------------ *
+*  ROW 5
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(12,5),LENGTH=1,ATTRB=(NORM,PROT),INITIAL='|'
+TXNID5  DFHMDF POS=(12,7),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(12,14),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+TXNTY5  DFHMDF POS=(12,17),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(12,28),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+AMT5    DFHMDF POS=(12,31),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(12,38),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+OUTS5   DFHMDF POS=(12,41),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(12,48),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+DATE5   DFHMDF POS=(12,51),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(12,62),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+*
+* ------------------------------------------------------------------ *
+*  ROW 6
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(13,5),LENGTH=1,ATTRB=(NORM,PROT),INITIAL='|'
+TXNID6  DFHMDF POS=(13,7),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(13,14),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+TXNTY6  DFHMDF POS=(13,17),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(13,28),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+AMT6    DFHMDF POS=(13,31),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(13,38),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+OUTS6   DFHMDF POS=(13,41),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(13,48),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+DATE6   DFHMDF POS=(13,51),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(13,62),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+*
+* ------------------------------------------------------------------ *
+*  ROW 7
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(14,5),LENGTH=1,ATTRB=(NORM,PROT),INITIAL='|'
+TXNID7  DFHMDF POS=(14,7),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(14,14),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+TXNTY7  DFHMDF POS=(14,17),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(14,28),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+AMT7    DFHMDF POS=(14,31),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(14,38),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+OUTS7   DFHMDF POS=(14,41),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(14,48),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+DATE7   DFHMDF POS=(14,51),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(14,62),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+*
+* ------------------------------------------------------------------ *
+*  ROW 8
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(15,5),LENGTH=1,ATTRB=(NORM,PROT),INITIAL='|'
+TXNID8  DFHMDF POS=(15,7),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(15,14),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+TXNTY8  DFHMDF POS=(15,17),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(15,28),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+AMT8    DFHMDF POS=(15,31),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(15,38),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+OUTS8   DFHMDF POS=(15,41),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(15,48),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+DATE8   DFHMDF POS=(15,51),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(15,62),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+*
+* ------------------------------------------------------------------ *
+*  ROW 9
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(16,5),LENGTH=1,ATTRB=(NORM,PROT),INITIAL='|'
+TXNID9  DFHMDF POS=(16,7),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(16,14),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+TXNTY9  DFHMDF POS=(16,17),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(16,28),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+AMT9    DFHMDF POS=(16,31),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(16,38),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+OUTS9   DFHMDF POS=(16,41),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(16,48),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+DATE9   DFHMDF POS=(16,51),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(16,62),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+*
+* ------------------------------------------------------------------ *
+*  ROW 10
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(17,5),LENGTH=1,ATTRB=(NORM,PROT),INITIAL='|'
+TXNID10 DFHMDF POS=(17,7),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(17,14),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+TXNTY10 DFHMDF POS=(17,17),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(17,28),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+AMT10   DFHMDF POS=(17,31),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(17,38),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+OUTS10  DFHMDF POS=(17,41),LENGTH=6,ATTRB=(NORM,PROT)
+        DFHMDF POS=(17,48),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+DATE10  DFHMDF POS=(17,51),LENGTH=10,ATTRB=(NORM,PROT)
+        DFHMDF POS=(17,62),LENGTH=2,ATTRB=(NORM,PROT),INITIAL=' |'
+*
+* ------------------------------------------------------------------ *
+*  FOOTER SEPARATOR
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(18,5),LENGTH=65,ATTRB=(NORM,PROT),                 X
+               INITIAL='---------------------------------------------  X
+               ----------------------'
+*
+* ------------------------------------------------------------------ *
+*  OVERDUE BALANCE + RECORD COUNT
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(19,6),LENGTH=17,ATTRB=(NORM,PROT),                 X
+               INITIAL='OVERDUE BALANCE :'
+TXNODB  DFHMDF POS=(19,24),LENGTH=6,                                   X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(19,31),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(19,40),LENGTH=10,ATTRB=(NORM,PROT),                X
+               INITIAL=' RECORDS  :'
+TXNREC  DFHMDF POS=(19,51),LENGTH=3,                                   X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(19,55),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(20,5),LENGTH=65,ATTRB=(NORM,PROT),                 X
+               INITIAL='---------------------------------------------  X
+               ----------------------'
+*
+* ------------------------------------------------------------------ *
+*  FUNCTION KEY BAR
+* ------------------------------------------------------------------ *
+        DFHMDF POS=(22,5),LENGTH=8,ATTRB=(NORM,PROT),                  X
+               INITIAL='F1=HELP '
+        DFHMDF POS=(22,17),LENGTH=8,ATTRB=(NORM,PROT),                 X
+               INITIAL='F3=BACK '
+        DFHMDF POS=(22,29),LENGTH=12,ATTRB=(NORM,PROT),                X
+               INITIAL='F7=PREV PAGE'
+        DFHMDF POS=(22,45),LENGTH=12,ATTRB=(NORM,PROT),                X
+               INITIAL='F8=NEXT PAGE'
+        DFHMDF POS=(22,61),LENGTH=10,ATTRB=(NORM,PROT),                X
+               INITIAL='F12=CLEAR '
+*
+* ------------------------------------------------------------------ *
+*  MESSAGE AREA
+* ------------------------------------------------------------------ *
+MSG     DFHMDF POS=(24,24),LENGTH=30,ATTRB=(PROT)
+        DFHMSD TYPE=FINAL
+        END
+

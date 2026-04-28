@@ -1,0 +1,144 @@
+CRENTRY DFHMSD MODE=INOUT,LANG=COBOL,STORAGE=AUTO,TYPE=&SYSPARM,       X
+               TIOAPFX=YES,CTRL=FREEKB,DSATTS=(COLOR,HILIGHT),         X
+               MAPATTS=(COLOR,HILIGHT)
+CURETRY DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+        DFHMDF POS=(1,23),                                             X
+               LENGTH=31,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=YELLOW,                                           X
+               INITIAL='PAISA LELO - CUSTOMER REPAYMENT'
+******
+        DFHMDF POS=(3,6),                                              X
+               LENGTH=15,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=YELLOW,                                           X
+               INITIAL='REPAYMENT ENTRY'
+        DFHMDF POS=(3,60),                                             X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='DATE :'
+DBDATE  DFHMDF POS=(3,67),                                             X
+               LENGTH=10,                                              X
+               ATTRB=(IC,NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(3,78),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(4,6),                                              X
+               LENGTH=72,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+******
+        DFHMDF POS=(6,6),                                              X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='ACCOUNT NO   :'
+CRACNO  DFHMDF POS=(6,21),                                             X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(6,32),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(6,50),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='INST. DUE    :'
+CRINSD  DFHMDF POS=(6,65),                                             X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(6,72),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(8,6),                                              X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='NAME         :'
+CRNAME  DFHMDF POS=(8,21),                                             X
+               LENGTH=20,                                              X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(8,42),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(8,50),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='DAYS OVERDUE :'
+CRDOVD  DFHMDF POS=(8,65),                                             X
+               LENGTH=2,                                               X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(8,68),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(10,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='OUTSTANDING  :'
+CROUTS  DFHMDF POS=(10,21),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(10,28),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(10,50),                                            X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='PENALTY      :'
+CRPENA  DFHMDF POS=(10,65),                                            X
+               LENGTH=6,                                               X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(10,72),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(12,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='DUE DATE     :'
+CRDUED  DFHMDF POS=(12,21),                                            X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(12,32),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(12,50),                                            X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='BANK A/C     :'
+CRBNKA  DFHMDF POS=(12,65),                                            X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(12,76),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(14,6),                                             X
+               LENGTH=72,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+******
+        DFHMDF POS=(16,6),                                             X
+               LENGTH=16,                                              X
+               COLOR=YELLOW,                                           X
+               ATTRB=(NORM,PROT),INITIAL='PAYMENT DETAILS :'
+******
+        DFHMDF POS=(18,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='ACCOUNT NO   :'
+CRPYAC  DFHMDF POS=(18,21),                                            X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(18,32),LENGTH=1,ATTRB=ASKIP
+
+        DFHMDF POS=(20,6),                                             X
+               LENGTH=14,                                              X
+               ATTRB=(NORM,PROT),INITIAL='AMOUNT       :'
+CRAMT   DFHMDF POS=(20,21),                                            X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,UNPROT),HILIGHT=UNDERLINE
+        DFHMDF POS=(20,32),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(21,6),                                             X
+               LENGTH=72,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+******
+        DFHMDF POS=(22,6),                                             X
+               LENGTH=74,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               COLOR=YELLOW,                                           X
+               INITIAL='BANK BALANCE WILL BE CHECKED.AMOUNT DEDUCTED ONX
+               CONFIRM'
+******
+        DFHMDF POS=(23,6),                                             X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='F3=BACK'
+        DFHMDF POS=(23,65),                                            X
+               LENGTH=10,                                              X
+               ATTRB=(NORM,PROT),                                      X
+               INITIAL='F12=CLEAR'
+        DFHMSD TYPE=FINAL
+               END
+
