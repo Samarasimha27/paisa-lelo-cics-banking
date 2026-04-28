@@ -1,0 +1,53 @@
+CSTMNU  DFHMSD MODE=INOUT,LANG=COBOL,STORAGE=AUTO,TYPE=&SYSPARM,       X
+               TIOAPFX=YES,CTRL=FREEKB,                                X
+               MAPATTS=(COLOR,HILIGHT)
+******
+PLCSMN  DFHMDI SIZE=(24,80),LINE=1,COLUMN=1
+        DFHMDF POS=(3,20),LENGTH=26,                                   X
+               INITIAL='PAISA LELO - CUSTOMER MENU',COLOR=YELLOW,      X
+               ATTRB=(NORM,ASKIP)
+        DFHMDF POS=(3,47),LENGTH=1,ATTRB=ASKIP
+******
+******
+        DFHMDF POS=(6,7),INITIAL='ACCOUNT NUMBER :',LENGTH=16,         X
+               ATTRB=(NORM,PROT),COLOR=YELLOW
+CMACNO  DFHMDF POS=(6,24),LENGTH=6,ATTRB=ASKIP
+        DFHMDF POS=(4,31),LENGTH=1,ATTRB=ASKIP
+        DFHMDF POS=(7,3),LENGTH=74,ATTRB=(NORM),                       X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+******
+CMACIN  DFHMDF POS=(9,7),LENGTH=42,                                    X
+               INITIAL='1.ACCOUNT INFO (VIEW YOUR ACCOUNT DETAILS)',   X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(9,50),LENGTH=1,ATTRB=PROT
+*****
+CMRPAY  DFHMDF POS=(11,7),LENGTH=34,                                   X
+               INITIAL='2.REPAYMENT (MAKE / VIEW PAYMENTS)',           X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(11,42),LENGTH=1,ATTRB=PROT
+*****
+CMTRAN  DFHMDF POS=(13,7),LENGTH=36,                                   X
+               INITIAL='3.TRANSACTIONS (STATEMENT / HISTORY)',         X
+               ATTRB=(NORM,PROT)
+        DFHMDF POS=(13,44),LENGTH=1,ATTRB=PROT
+******
+        DFHMDF POS=(14,3),LENGTH=76,ATTRB=(NORM),                      X
+               INITIAL='-----------------------------------------------X
+               -----------------------------'
+******
+        DFHMDF POS=(16,7),INITIAL='ENTER YOUR CHOICE:',LENGTH=18,      X
+               ATTRB=(NORM,PROT)
+CMCHOI  DFHMDF POS=(16,26),LENGTH=1,ATTRB=(IC,UNPROT),                 X
+               HILIGHT=UNDERLINE
+        DFHMDF POS=(16,28),LENGTH=1,ATTRB=ASKIP
+******
+        DFHMDF POS=(18,7),INITIAL='SELECT OPTION AND PRESS ENTER',     X
+               LENGTH=29,ATTRB=PROT
+MSG     DFHMDF POS=(17,3),LENGTH=40,ATTRB=(PROT,NORM),COLOR=RED
+        DFHMDF POS=(23,7),LENGTH=33,ATTRB=(PROT,NORM),                 X
+               INITIAL='F3=EXIT              ENTER=SUBMIT'
+
+        DFHMSD TYPE=FINAL
+               END
+
