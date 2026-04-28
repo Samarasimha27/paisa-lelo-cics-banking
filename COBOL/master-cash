@@ -1,0 +1,419 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. MSTCASH2.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       COPY DFHAID.
+       COPY PLCCME2.
+      *
+       01  WS-RESP           PIC S9(8) COMP.
+       01  WS-ACCNO          PIC X(6).
+       01  WS-DATE           PIC X(10).
+       01  WS-ABSTIME        PIC X(10).
+       01  WS-AMOUNT         PIC 9(6).
+       01  NEW-OUTSTDG       PIC 9(6).
+       01  WS-TXN-KEY        PIC 9(6) VALUE 000000.
+       01  WS-OUTSTDG-D      PIC Z(6).
+       01  WS-PENALTY-D      PIC Z(6).
+       01  NEW-AMT-PAID      PIC 9(6).
+      *
+      ******************************************************************
+      * LOAN RECORD LAYOUT
+      ******************************************************************
+       01  WS-LOAN-RECORD.
+           05 WS-LOAN-ACT-NO        PIC X(6).
+           05 WS-CUST-ID            PIC X(6).
+           05 WS-SCHEME             PIC X(1).
+           05 WS-LOAN-AMT           PIC 9(6).
+           05 WS-TENURE             PIC 9(3).
+           05 WS-INTEREST           PIC 9(2).
+           05 WS-BANK-ACCT          PIC X(10).
+           05 WS-INCOME             PIC 9(6).
+           05 WS-SURETY-ASSET       PIC X(10).
+           05 WS-SURETY-VAL         PIC 9(6).
+           05 WS-SURETY-ACCT        PIC X(6).
+           05 WS-OUTSTDG            PIC 9(6).
+           05 WS-PAID-TO-DATE       PIC X(8).
+           05 WS-NEXT-DUE-DT        PIC X(8).
+           05 WS-DAYS-OVERD         PIC 9(3).
+           05 WS-PENALTY            PIC 9(6).
+           05 WS-STATUS             PIC X(1).
+           05 WS-OPEN-DATE          PIC X(8).
+           05 WS-CLOSE-DATE         PIC X(8).
+           05 WS-NXT-INSTALLMNT     PIC 9(6).
+           05 WS-FIRST-INSTALLMNT   PIC 9(6).
+           05 WS-INSTALLEMENT-AMT   PIC 9(6).
+           05 L-STLMNT-STS         PIC  X.
+           05 L-GRACE-PERIOD       PIC  9.
+           05 L-PAID-AMT           PIC  9(6).
+           05 EXTRA-SPACE          PIC  X(14).
+      *
+      ******************************************************************
+      * CUSTOMER RECORD LAYOUT
+      ******************************************************************
+       01  WS-CUSTOMER-RECORD.
+           05 WS-CUST-ID-REC        PIC X(6).
+           05 WS-CUST-NAME          PIC X(20).
+           05 WS-AADHAR             PIC X(12).
+           05 WS-PHONE              PIC X(10).
+           05 WS-ADDRESS            PIC X(12).
+           05 WS-IS-LOCAL           PIC X(1).
+           05 WS-AGE                PIC 9(2).
+           05 WS-LOANS              PIC 9(2).
+           05 WS-RATING             PIC X(1).
+           05 FILLER-EXTRA          PIC X(14).
+      *
+      ******************************************************************
+      * TRANSACTION RECORD LAYOUT
+      ******************************************************************
+       01  WS-TXN-RECORD.
+           05 WS-TXNID              PIC 9(6).
+           05 WS-LACCTNO            PIC X(6).
+           05 WS-TXNDATE            PIC X(10).
+           05 WS-TXNMODE            PIC X(7).
+           05 WS-TXNTYPE            PIC X(9).
+           05 WS-TXNAMT             PIC 9(6).
+           05 WS-TXNOUTSTD          PIC 9(6).
+           05 WS-ENTRYBY            PIC X(8).
+           05 TXN-EXTRA             PIC X(22).
+      *
+      ******************************************************************
+      * TRANSACTION COUNTER RECORD
+      ******************************************************************
+       01  WS-COUNT-REC.
+           05 WS-KEY                PIC 9(6).
+           05 LAST-TXNID            PIC 9(6).
+       01  WS-COMMAREA.
+           05 WS-USER-ID           PIC X(6).
+           05 WS-SCREEN-CODE       PIC X(1).
+      *
+       LINKAGE SECTION.
+       01  DFHCOMMAREA.
+           05 USER-ID           PIC X(6).
+           05 USER-TYPE         PIC X(1).
+      ******************************************************************
+       PROCEDURE DIVISION.
+      ******************************************************************
+       000-MAIN-PARA.
+      *    FIRST TIME ENTRY - EIBCALEN = 0
+           IF EIBCALEN = 0
+              MOVE LOW-VALUES TO CCMEO
+              PERFORM 100-SEND-SCREEN
+              PERFORM 900-RETURN-CICS
+           END-IF
+           MOVE DFHCOMMAREA TO WS-COMMAREA
+           IF WS-SCREEN-CODE = 'R'
+              MOVE LOW-VALUES TO CCMEO
+              PERFORM 100-SEND-SCREEN
+              PERFORM 900-RETURN-CICS
+           END-IF
+      *       SUBSEQUENT ENTRY - INITIALIZE ALL RECORDS
+              MOVE SPACES TO WS-LOAN-RECORD
+              MOVE SPACES TO WS-CUSTOMER-RECORD
+              MOVE SPACES TO WS-TXN-RECORD
+              PERFORM 200-FETCH-ACCOUNT
+              PERFORM 900-RETURN-CICS.
+      *
+      ******************************************************************
+      * 100-SEND-SCREEN
+      * PURPOSE: DISPLAY BLANK SCREEN WITH CURRENT DATE
+      ******************************************************************
+       100-SEND-SCREEN.
+      *    GET CURRENT DATE
+           EXEC CICS ASKTIME
+                ABSTIME(WS-ABSTIME)
+           END-EXEC
+           EXEC CICS FORMATTIME
+                ABSTIME(WS-ABSTIME)
+                DDMMYYYY(WS-DATE)
+                DATESEP('/')
+           END-EXEC
+      *    POPULATE DATE AND SEND MAP
+           MOVE WS-DATE TO CCDATEO
+           MOVE SPACES   TO CCMSGO
+           EXEC CICS SEND MAP('CCME')
+                MAPSET('PLCCME2')
+                ERASE
+                FREEKB
+           END-EXEC
+           MOVE LOW-VALUES TO WS-SCREEN-CODE.
+      *
+      ******************************************************************
+      * 200-FETCH-ACCOUNT
+      * PURPOSE: EVALUATE AID KEY AND BRANCH ACCORDINGLY
+      ******************************************************************
+       200-FETCH-ACCOUNT.
+           EVALUATE EIBAID
+
+      *================ ENTER KEY - FETCH ACCOUNT DETAILS =============
+           WHEN DFHENTER
+                PERFORM 300-RECEIVE-SCREEN
+                PERFORM 400-READFILE
+                IF WS-RESP = DFHRESP(NORMAL)
+                   PERFORM 500-FETCH-CUSTDETAILS
+                   IF WS-RESP = DFHRESP(NORMAL)
+                      PERFORM 600-SENDDATA
+                      MOVE 'ACCOUNT FOUND' TO CCMSGO
+                      EXEC CICS SEND MAP('CCME')
+                           MAPSET('PLCCME2')
+                           DATAONLY
+                           FREEKB
+                      END-EXEC
+                   ELSE
+                      MOVE 'CUSTOMER RECORD NOT FOUND' TO CCMSGO
+                      PERFORM 100-SEND-SCREEN
+                   END-IF
+                ELSE
+                   MOVE 'ACCOUNT DOES NOT EXIST'   TO CCMSGO
+                   MOVE SPACES                     TO CCNAMEO
+                   MOVE SPACES                     TO CCDODO
+                   MOVE SPACES                     TO CCOUTSO
+                   MOVE SPACES                     TO CCPNTYO
+                   MOVE SPACES                     TO CCDUEDO
+                   MOVE SPACES                     TO CCSHMEO
+                   MOVE SPACES                     TO CCINSDO
+                   MOVE SPACES                     TO CCBACO
+                   EXEC CICS SEND MAP('CCME')
+                        MAPSET('PLCCME2')
+                        ERASE
+                        FREEKB
+                   END-EXEC
+                END-IF
+
+      *================ PF3 KEY - RETURN TO MENU ====================
+           WHEN DFHPF3
+                 MOVE 'M' TO WS-SCREEN-CODE
+                 EXEC CICS XCTL PROGRAM('PACTMOD')
+                      COMMAREA(WS-COMMAREA)
+                      LENGTH(7)
+                 END-EXEC
+      *================ PF5 KEY - SUBMIT CASH REPAYMENT ============
+           WHEN DFHPF5
+                EXEC CICS RECEIVE MAP('CCME')
+                     MAPSET('PLCCME2')
+                END-EXEC
+      *           FIX: POPULATE WS-ACCNO BEFORE REPAYMENT
+                MOVE CCEACNOI(1:6) TO WS-ACCNO
+                MOVE CCAMTRI       TO WS-AMOUNT
+      *           VALIDATE: AMOUNT MUST BE > ZERO
+                IF WS-AMOUNT = ZEROS
+                   MOVE 'AMOUNT CANNOT BE ZERO' TO CCMSGO
+                   EXEC CICS SEND MAP('CCME')
+                        MAPSET('PLCCME2')
+                        DATAONLY
+                        FREEKB
+                   END-EXEC
+                ELSE
+                   PERFORM 700-REPAYMENT-PARA
+                   IF WS-RESP = DFHRESP(NORMAL)
+                      MOVE 'PAYMENT RECORDED SUCCESSFULLY' TO CCMSGO
+                   ELSE
+                      MOVE 'ERROR DURING PAYMENT POSTING'  TO CCMSGO
+                   END-IF
+                   EXEC CICS SEND MAP('CCME')
+                        MAPSET('PLCCME2')
+                        DATAONLY
+                        FREEKB
+                   END-EXEC
+                END-IF
+
+      *================ ANY OTHER KEY - REDISPLAY SCREEN ============
+           WHEN OTHER
+                PERFORM 100-SEND-SCREEN
+
+           END-EVALUATE.
+      *
+      ******************************************************************
+      * 300-RECEIVE-SCREEN
+      * PURPOSE: RECEIVE MAP INPUT FROM TERMINAL
+      ******************************************************************
+       300-RECEIVE-SCREEN.
+           EXEC CICS RECEIVE MAP('CCME')
+                MAPSET('PLCCME2')
+           END-EXEC
+           MOVE CCEACNOI(1:6) TO WS-ACCNO.
+      *
+      ******************************************************************
+      * 400-READFILE
+      * PURPOSE: READ LOAN RECORD BY ACCOUNT NUMBER
+      ******************************************************************
+       400-READFILE.
+           EXEC CICS READ
+                FILE('PLLOANFL')
+                INTO(WS-LOAN-RECORD)
+                RIDFLD(WS-ACCNO)
+                RESP(WS-RESP)
+           END-EXEC.
+      *
+      ******************************************************************
+      * 500-FETCH-CUSTDETAILS
+      * PURPOSE: READ CUSTOMER RECORD USING CUST-ID FROM LOAN RECORD
+      ******************************************************************
+       500-FETCH-CUSTDETAILS.
+           EXEC CICS READ
+                FILE('PLCUSTDT')
+                INTO(WS-CUSTOMER-RECORD)
+                RIDFLD(WS-CUST-ID)
+                RESP(WS-RESP)
+           END-EXEC.
+      *
+      ******************************************************************
+      * 600-SENDDATA
+      * PURPOSE: POPULATE SCREEN WITH LOAN AND CUSTOMER DETAILS
+      ******************************************************************
+       600-SENDDATA.
+           MOVE WS-DATE           TO CCDATEO
+           MOVE WS-CUST-NAME      TO CCNAMEO
+           MOVE WS-DAYS-OVERD     TO CCDODO
+      *    FORMAT OUTSTANDING FOR DISPLAY
+           MOVE WS-OUTSTDG        TO WS-OUTSTDG-D
+           MOVE WS-OUTSTDG-D      TO CCOUTSO
+      *    FORMAT PENALTY FOR DISPLAY
+           MOVE WS-PENALTY        TO WS-PENALTY-D
+           MOVE WS-PENALTY-D      TO CCPNTYO
+      *    HANDLE POSSIBLE LOW-VALUES IN DUE DATE
+           INSPECT WS-NEXT-DUE-DT
+                   REPLACING ALL LOW-VALUES BY SPACES
+           MOVE WS-NEXT-DUE-DT    TO CCDUEDO
+           MOVE WS-SCHEME         TO CCSHMEO
+           MOVE WS-NXT-INSTALLMNT TO CCINSDO
+           MOVE SPACES            TO CCBACO
+           MOVE WS-BANK-ACCT      TO CCBACO.
+      *
+      ******************************************************************
+      * 700-REPAYMENT-PARA
+      * PURPOSE: PROCESS CASH REPAYMENT:
+      *          - UPDATE OUTSTANDING IN LOAN FILE
+      *          - GENERATE TRANSACTION ID VIA COUNTER FILE
+      *          - WRITE TRANSACTION TO PLTXNFL AND PLLDGR
+      * FIX    : WS-TXN-RECORD INITIALIZED TO SPACES TO AVOID
+      *          GARBAGE IN TXN-EXTRA FIELD GOING INTO LEDGER
+      ******************************************************************
+       700-REPAYMENT-PARA.
+           EXEC CICS ASKTIME
+                ABSTIME(WS-ABSTIME)
+           END-EXEC
+           EXEC CICS FORMATTIME
+                ABSTIME(WS-ABSTIME)
+                DDMMYYYY(WS-DATE)
+                DATESEP('/')
+           END-EXEC
+      *    FIX: ALWAYS INITIALIZE TXN RECORD BEFORE POPULATING
+           MOVE SPACES TO WS-TXN-RECORD
+
+      *    READ LOAN RECORD FOR UPDATE
+           EXEC CICS READ
+                FILE('PLLOANFL')
+                INTO(WS-LOAN-RECORD)
+                UPDATE
+                RIDFLD(WS-ACCNO)
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'LOAN READ ERROR' TO CCMSGO
+              GO TO 700-EXIT
+           END-IF
+
+      *    READ TRANSACTION COUNTER FOR UPDATE
+           EXEC CICS READ
+                FILE('PLTXNCNT')
+                INTO(WS-COUNT-REC)
+                UPDATE
+                RIDFLD(WS-TXN-KEY)
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'TXN COUNTER READ ERROR' TO CCMSGO
+              GO TO 700-EXIT
+           END-IF
+
+      *    INCREMENT TRANSACTION ID
+           ADD 1 TO LAST-TXNID
+           MOVE LAST-TXNID TO WS-TXNID
+
+      *    REWRITE UPDATED COUNTER
+           EXEC CICS REWRITE
+                FILE('PLTXNCNT')
+                FROM(WS-COUNT-REC)
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'TXN COUNTER WRITE ERROR' TO CCMSGO
+              GO TO 700-EXIT
+           END-IF
+
+      *    POPULATE TRANSACTION RECORD
+           MOVE WS-LOAN-ACT-NO    TO WS-LACCTNO
+           MOVE WS-DATE           TO WS-TXNDATE
+           MOVE 'OFFLINE'         TO WS-TXNMODE
+           MOVE 'REPAYMENT'       TO WS-TXNTYPE
+           MOVE WS-AMOUNT         TO WS-TXNAMT
+           MOVE 'MASTER'          TO WS-ENTRYBY
+           MOVE SPACES            TO TXN-EXTRA
+
+      *    CALCULATE NEW OUTSTANDING
+           MOVE WS-DATE(1:2) TO WS-PAID-TO-DATE(1:2)
+           MOVE WS-DATE(4:2) TO WS-PAID-TO-DATE(3:2)
+           MOVE WS-DATE(7:4) TO WS-PAID-TO-DATE(5:4)
+           ADD WS-AMOUNT TO L-PAID-AMT GIVING NEW-AMT-PAID
+           MOVE NEW-AMT-PAID TO L-PAID-AMT
+           SUBTRACT WS-AMOUNT FROM WS-OUTSTDG GIVING NEW-OUTSTDG
+           MOVE NEW-OUTSTDG       TO WS-OUTSTDG
+           MOVE NEW-OUTSTDG       TO WS-TXNOUTSTD
+
+      *    REWRITE UPDATED LOAN RECORD
+           EXEC CICS REWRITE
+                FILE('PLLOANFL')
+                FROM(WS-LOAN-RECORD)
+                LENGTH(150)
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'LOAN FILE REWRITE ERROR' TO CCMSGO
+              GO TO 700-EXIT
+           END-IF
+
+      *    WRITE TO TRANSACTION FILE
+           EXEC CICS WRITE
+                FILE('PLTXNFL')
+                FROM(WS-TXN-RECORD)
+                LENGTH(80)
+                RIDFLD(WS-TXNID)
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'TXN FILE WRITE ERROR' TO CCMSGO
+              GO TO 700-EXIT
+           END-IF
+
+      *    WRITE TO LEDGER FILE
+           EXEC CICS WRITE
+                FILE('PLLDGR')
+                FROM(WS-TXN-RECORD)
+                LENGTH(80)
+                RIDFLD(WS-TXNID)
+                RESP(WS-RESP)
+           END-EXEC
+
+           IF WS-RESP NOT = DFHRESP(NORMAL)
+              MOVE 'LEDGER FILE WRITE ERROR' TO CCMSGO
+           END-IF.
+
+       700-EXIT.
+           EXIT.
+      *
+      ******************************************************************
+      * 900-RETURN-CICS
+      * PURPOSE: RETURN CONTROL TO CICS WITH TRANSACTION ID AND COMMAREA
+      ******************************************************************
+       900-RETURN-CICS.
+           EXEC CICS RETURN
+                TRANSID('I002')
+                COMMAREA(WS-COMMAREA)
+                LENGTH(7)
+           END-EXEC.
+
